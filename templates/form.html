@@ -1,0 +1,2219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Registro de Paros</title>
+<style>
+  :root {
+    --verde: #1a5c2a;
+    --verde-oscuro: #0f3d1a;
+    --verde-claro: #e8f5ec;
+    --verde-borde: #7ed89a;
+    --gris: #f4f4f4;
+    --gris-borde: #ddd;
+    --texto: #1a1a1a;
+    --texto-sub: #555;
+    --rojo: #c0392b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #eaeaea; color: var(--texto); font-size: 15px; }
+
+  /* HEADER */
+  .header { background: var(--verde); color: white; padding: 14px 16px 10px; }
+  .header-top { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .logo-circle { width: 52px; height: 52px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .header-title { font-size: 16px; font-weight: 600; line-height: 1.2; }
+  .header-sub { font-size: 11px; opacity: 0.8; }
+  .logo-band { background: #fff; border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+  .logo-img { width: 100%; max-width: 300px; height: auto; display: block; }
+  .header-titles { text-align: center; }
+  .reloj { background: var(--verde-oscuro); color: #7ed89a; font-size: 12px; padding: 5px 16px; display: flex; justify-content: space-between; font-family: 'Courier New', monospace; }
+
+  /* CARDS */
+  .card { background: white; margin: 10px 12px 0; border-radius: 10px; padding: 14px; border: 1px solid #e0e0e0; }
+  .card-title { font-size: 11px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: var(--texto-sub); margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+  .card-title svg { width: 14px; height: 14px; fill: var(--verde); flex-shrink: 0; }
+
+  /* TABS MÁQUINA */
+  .tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
+  .tabs::-webkit-scrollbar { height: 5px; }
+  .tabs::-webkit-scrollbar-thumb { background: #cfd8d2; border-radius: 3px; }
+  .tabs::-webkit-scrollbar-track { background: transparent; }
+  .tab { flex: 0 0 auto; min-width: 90px; white-space: nowrap; border: 1.5px solid var(--gris-borde); border-radius: 8px; padding: 9px 12px 7px; text-align: center; cursor: pointer; background: var(--gris); font-size: 12px; color: var(--texto-sub); line-height: 1.3; transition: all 0.15s; }
+  .tab.active { background: var(--verde); color: white; border-color: var(--verde); font-weight: 600; }
+  .tab-sub { font-size: 10px; opacity: 0.7; margin-top: 2px; }
+
+  /* FIELDS */
+  .field { margin-bottom: 12px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label { font-size: 12px; color: var(--texto-sub); display: block; margin-bottom: 5px; font-weight: 500; }
+  /* Marca junto a "Código OP" cuando el turno va en etapa de mantenimiento.
+     Verde = no bloquea, no es un error: el campo simplemente puede ir vacío. */
+  #op-opcional { color: var(--verde); font-weight: 600; }
+
+  /* Botones opcionales Parte A / Parte B, debajo de la OP. Verde cuando activo. */
+  .parte-row { display: flex; align-items: center; gap: 8px; margin: 8px 0 2px; flex-wrap: wrap; }
+  .parte-label { font-size: 12px; color: var(--texto-sub); }
+  .btn-parte {
+    padding: 7px 18px; border-radius: 8px; border: 1.5px solid var(--gris-borde);
+    background: white; color: var(--texto-sub); font-size: 14px; font-weight: 600;
+    font-family: inherit; cursor: pointer; transition: all 0.12s;
+  }
+  .btn-parte:active { transform: scale(0.98); }
+  .btn-parte.active { background: var(--verde); color: white; border-color: var(--verde); }
+  .field input, .field textarea {
+    width: 100%; padding: 11px 12px; border: 1.5px solid var(--gris-borde);
+    border-radius: 8px; font-size: 16px; /* 16px evita zoom en iOS */
+    font-family: inherit; color: var(--texto); background: white;
+    -webkit-appearance: none; appearance: none;
+  }
+  .field input:focus, .field textarea:focus { outline: none; border-color: var(--verde); }
+  .field input[readonly] { background: var(--gris); color: var(--texto-sub); font-size: 14px; }
+  .field textarea { resize: none; height: 90px; font-size: 14px; line-height: 1.5; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .auto-tag { display: inline-flex; align-items: center; gap: 3px; background: var(--verde-claro); color: var(--verde-oscuro); font-size: 10px; padding: 2px 7px; border-radius: 20px; margin-top: 4px; border: 1px solid var(--verde-borde); }
+
+  /* GUARDAR */
+  .btn-guardar {
+    width: calc(100% - 24px); margin: 12px 12px 0;
+    padding: 15px; background: var(--verde); color: white; border: none;
+    border-radius: 10px; font-size: 17px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-family: inherit;
+  }
+  .btn-guardar:active { background: var(--verde-oscuro); transform: scale(0.98); }
+  .btn-guardar svg { width: 20px; height: 20px; fill: white; }
+  /* Color rojo del botón cuando el evento está en curso y dice "Terminar evento" */
+  .btn-guardar.terminar { background: var(--rojo); }
+  .btn-guardar.terminar:active { background: #8e2a1f; }
+
+  /* BOTONES DE TURNO: Iniciar turno · Fin evento · Cerrar turno */
+  .btn-turno {
+    width: calc(100% - 24px); margin: 10px 12px 0; padding: 15px;
+    border: none; border-radius: 10px; font-size: 17px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    gap: 8px; font-family: inherit; color: white; transition: all 0.15s;
+  }
+  .btn-turno svg { width: 20px; height: 20px; fill: white; flex-shrink: 0; }
+  .btn-turno:active { transform: scale(0.98); }
+  /* Botón deshabilitado: gris, sin puntero. Es como se ven los botones que aún
+     no corresponden según el flujo (p. ej. "Fin evento" antes de abrir turno). */
+  .btn-turno:disabled { background: #ccc; color: #f2f2f2; cursor: not-allowed; transform: none; }
+  .btn-turno:disabled svg { fill: #f2f2f2; }
+  .btn-inicio { background: var(--verde); }
+  .btn-inicio:not(:disabled):active { background: var(--verde-oscuro); }
+  .btn-fin-evento { background: #1f6f8b; }   /* azul: cierra el evento e inicia el siguiente */
+  .btn-fin-evento:not(:disabled):active { background: #164f63; }
+  /* Botón para pasar de una etapa a otra sin cerrar el turno. Neutro (no verde,
+     azul ni rojo) para no confundirlo con los tres botones de flujo del turno. */
+  .btn-cambiar-etapa {
+    background: white; color: var(--texto-sub); border: 1.5px solid var(--gris-borde);
+    box-shadow: none;
+  }
+  .btn-cambiar-etapa:active { background: var(--gris); }
+
+  /* ── MICRO PAROS (paradas cortas dentro del TIRAJE) ─────────────────────── */
+  .btn-microparo {
+    width: 100%; padding: 13px; border-radius: 9px; border: none;
+    font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer;
+    color: white; background: #b8860b;   /* ámbar: es un paro, no producción */
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-microparo:active { transform: scale(0.99); }
+  .btn-microparo:disabled { opacity: 0.5; }
+  .btn-microparo-fin { background: var(--rojo); }
+  .btn-microparo-cancelar {
+    width: 100%; padding: 10px; margin-top: 8px; border-radius: 9px;
+    border: 1.5px solid var(--gris-borde); background: white; color: var(--texto-sub);
+    font-size: 13px; font-family: inherit; cursor: pointer;
+  }
+  /* Cronómetro en vivo mientras el micro paro está en curso */
+  .microparo-crono {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-size: 20px; font-weight: 700; color: var(--rojo);
+    padding: 10px 0 14px; font-variant-numeric: tabular-nums;
+  }
+  .microparo-crono .punto {
+    width: 10px; height: 10px; border-radius: 50%; background: var(--rojo);
+    animation: parpadeo 1.1s ease-in-out infinite;
+  }
+  .microparo-resumen {
+    font-size: 13px; color: var(--texto-sub); margin-bottom: 12px; text-align: center; line-height: 1.4;
+  }
+  .microparo-conteo { font-size: 12px; color: var(--texto-sub); text-align: center; margin-top: 8px; }
+  .btn-cerrar { background: var(--rojo); }
+  .btn-cerrar:not(:disabled):active { background: #8e2a1f; }
+
+  /* Estado del turno (visible mientras el turno está abierto) */
+  .turno-status { display: none; margin: 12px 12px 0; padding: 12px 16px; border-radius: 8px; font-size: 13px; background: #eef7f0; border: 1px solid var(--verde-borde); color: var(--verde-oscuro); align-items: center; gap: 8px; line-height: 1.4; }
+  /* Formulario bloqueado (antes de "Iniciar turno"): gris y sin poder tocarse. */
+  #form-gated.locked { opacity: 0.4; pointer-events: none; filter: grayscale(0.4); user-select: none; }
+  .turno-status .punto { width: 9px; height: 9px; border-radius: 50%; background: var(--verde); flex-shrink: 0; animation: parpadeo 1.2s ease-in-out infinite; }
+
+  /* Aviso que aparece mientras hay un evento iniciado y sin terminar */
+  .evento-en-curso { margin: 10px 12px 0; padding: 12px 16px; border-radius: 8px; font-size: 13px; text-align: left; background: #fdecea; border: 1px solid #f5a19a; color: var(--rojo); align-items: center; gap: 8px; }
+  .evento-en-curso .punto { width: 9px; height: 9px; border-radius: 50%; background: var(--rojo); flex-shrink: 0; animation: parpadeo 1.2s ease-in-out infinite; }
+  @keyframes parpadeo { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+  /* BANNER */
+  .banner { display: none; margin: 10px 12px 0; padding: 13px 16px; border-radius: 8px; font-size: 13px; text-align: center; }
+  .banner.ok { background: var(--verde-claro); border: 1px solid var(--verde-borde); color: var(--verde-oscuro); }
+  .banner.err { background: #fdecea; border: 1px solid #f5a19a; color: var(--rojo); }
+
+  /* SPINNER */
+  .spinner { display: none; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* AUTOCOMPLETE OP */
+  .op-wrap { position: relative; }
+  .op-dropdown {
+    display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 100;
+    background: white; border: 1.5px solid var(--verde); border-top: none;
+    border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  .op-item {
+    padding: 10px 12px; font-size: 14px; cursor: pointer; border-bottom: 1px solid var(--gris-borde);
+    display: flex; flex-direction: column;
+  }
+  .op-item:last-child { border-bottom: none; }
+  .op-item:active, .op-item.highlighted { background: var(--verde-claro); }
+  .op-item-ref { font-size: 11px; color: var(--texto-sub); margin-top: 2px; }
+  .spacer { height: 24px; }
+
+  /* ── PANTALLA DE INGRESO (LOGIN) ───────────────────────────────────────── */
+  .login-overlay {
+    position: fixed; inset: 0; z-index: 2000; background: var(--verde);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px; overflow-y: auto;
+  }
+  .login-box {
+    background: white; width: 100%; max-width: 380px; border-radius: 16px;
+    padding: 26px 22px; box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+  }
+  .login-logo { display: flex; justify-content: center; margin-bottom: 18px; }
+  .login-logo .logo-img { max-width: 220px; }
+  .login-title { font-size: 20px; font-weight: 700; color: var(--verde-oscuro); text-align: center; margin-bottom: 4px; }
+  .login-sub { font-size: 13px; color: var(--texto-sub); text-align: center; margin-bottom: 20px; line-height: 1.4; }
+  .login-field { margin-bottom: 14px; }
+  .login-field label { display: block; font-size: 12px; color: var(--texto-sub); margin-bottom: 6px; font-weight: 500; }
+  .login-field input {
+    width: 100%; padding: 13px 14px; border: 1.5px solid var(--gris-borde);
+    border-radius: 10px; font-size: 16px; font-family: inherit; color: var(--texto);
+    background: white; -webkit-appearance: none; appearance: none;
+  }
+  .login-field input:focus { outline: none; border-color: var(--verde); }
+  .login-error {
+    display: none; background: #fdecea; border: 1px solid #f5a19a; color: var(--rojo);
+    font-size: 13px; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; text-align: center;
+  }
+  .btn-login {
+    width: 100%; padding: 15px; background: var(--verde); color: white; border: none;
+    border-radius: 10px; font-size: 17px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px; font-family: inherit;
+  }
+  .btn-login:active { background: var(--verde-oscuro); transform: scale(0.98); }
+  .btn-login:disabled { background: #9db8a4; cursor: not-allowed; transform: none; }
+
+  /* Barra que muestra qué inspector ingresó */
+  .inspector-bar {
+    background: var(--verde-oscuro); color: #cdeccf; font-size: 12px;
+    padding: 6px 16px; display: flex; align-items: center; gap: 6px;
+  }
+  .inspector-bar strong { color: white; }
+
+  /* ── MODAL: confirmar cierre de turno ──────────────────────────────────── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 3000;
+    background: rgba(0,0,0,0.5); align-items: center; justify-content: center; padding: 24px;
+  }
+  .modal-box {
+    background: white; width: 100%; max-width: 340px; border-radius: 16px;
+    padding: 24px 22px; text-align: center; box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+  }
+  .modal-icon { display: flex; justify-content: center; margin-bottom: 12px; }
+  .modal-icon svg { width: 46px; height: 46px; fill: var(--rojo); }
+  .modal-title { font-size: 18px; font-weight: 700; color: var(--texto); margin-bottom: 8px; line-height: 1.3; }
+  .modal-text { font-size: 13px; color: var(--texto-sub); margin-bottom: 20px; line-height: 1.45; }
+  .modal-actions { display: flex; gap: 10px; }
+  .modal-btn {
+    flex: 1; padding: 14px; border: none; border-radius: 10px; font-size: 16px;
+    font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  .modal-btn:active { transform: scale(0.98); }
+  .modal-no { background: var(--gris); color: var(--texto); border: 1.5px solid var(--gris-borde); }
+  .modal-si { background: var(--rojo); color: white; }
+  .modal-si:active { background: #8e2a1f; }
+
+  /* ── Ventana de ETAPA (sale después del login, antes de iniciar el turno) ── */
+  .btn-etapa {
+    width: 100%; padding: 16px; margin-top: 12px; border-radius: 12px;
+    border: 2px solid var(--verde); background: var(--verde-claro);
+    color: var(--verde-oscuro); font-family: inherit; cursor: pointer;
+    text-align: left; display: block;
+  }
+  .btn-etapa:active { transform: scale(0.98); }
+  .btn-etapa-t { display: block; font-size: 17px; font-weight: 700; }
+  .btn-etapa-s { display: block; font-size: 12px; font-weight: 500; margin-top: 3px; opacity: 0.85; }
+  .btn-etapa-mtto { border-color: var(--gris-borde); background: var(--gris); color: var(--texto); }
+</style>
+</head>
+<body>
+
+<!-- ── PANTALLA DE INGRESO (LOGIN) ─────────────────────────────────────────
+     Aparece de primero y cubre toda la app. El inspector escribe su nombre y
+     su codigo de empleado. Hasta que no ingrese, no puede usar el formulario.
+     Al cerrar el turno, se vuelve a mostrar esta pantalla. -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="logo-img"></div>
+    </div>
+    <div class="login-title">Ingreso de inspector</div>
+    <div class="login-sub">Escribe tu codigo para continuar</div>
+    <div class="login-field">
+      <label>Codigo de empleado</label>
+      <input type="password" id="login-codigo" placeholder="Tu codigo" autocomplete="off" inputmode="numeric" autofocus>
+    </div>
+    <div class="login-error" id="login-error"></div>
+    <button class="btn-login" id="btn-login" onclick="hacerLogin()">
+      <span>Ingresar</span>
+      <div class="spinner" id="spinner-login"></div>
+    </button>
+  </div>
+</div>
+
+<!-- ── VENTANA DE ETAPA ────────────────────────────────────────────────────
+     Sale DESPUÉS del login y ANTES de iniciar el turno. El inspector dice si va
+     a trabajar en etapa productiva o de mantenimiento, y esa elección manda
+     sobre todo el turno: define si se exige OP y si se registran cantidades.
+     No se puede cerrar sin elegir (no hay botón de salir). -->
+<div class="login-overlay" id="etapa-overlay" style="display:none">
+  <div class="login-box">
+    <div class="login-title">¿En qué etapa vas a trabajar?</div>
+    <div class="login-sub">Elige antes de iniciar el turno</div>
+    <button class="btn-etapa" onclick="elegirEtapa('productiva')">
+      <span class="btn-etapa-t">Etapa productiva</span>
+      <span class="btn-etapa-s">Se exige OP · se registran cantidades</span>
+    </button>
+    <button class="btn-etapa btn-etapa-mtto" onclick="elegirEtapa('mantenimiento')">
+      <span class="btn-etapa-t">Etapa de mantenimiento</span>
+      <span class="btn-etapa-s">Sin OP · sin cantidades</span>
+    </button>
+  </div>
+</div>
+
+<!-- LOGO -->
+<div class="logo-band">
+  <div class="logo-img"></div>
+</div>
+
+<!-- HEADER -->
+<div class="header" style="text-align:center;">
+  <div class="header-title">Registro · Maquina</div>
+  <div class="header-sub">Seguimiento en planta</div>
+</div>
+<div class="reloj">
+  <span id="reloj-fecha">—</span>
+  <span id="reloj-turno" style="color:white; font-family: inherit;">—</span>
+</div>
+<!-- Muestra qué inspector está usando la app en este momento -->
+<div class="inspector-bar">
+  <span>Inspector: <strong id="inspector-actual">—</strong></span>
+  <!-- Recuerda en todo momento en qué etapa está trabajando el turno. -->
+  <span id="etapa-bar" style="margin-left:auto; display:none">Etapa: <strong id="etapa-actual">—</strong></span>
+</div>
+
+<!-- MÁQUINA -->
+<div class="card">
+  <div class="card-title">
+    <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
+    Máquina
+  </div>
+  <div class="tabs">
+    <div class="tab" onclick="selectMaq(this,'Conversion · P1')">
+      Conversion<div class="tab-sub">Planta 1</div>
+    </div>
+    <div class="tab" onclick="selectMaq(this,'CTZ · P1')">
+      CTZ<div class="tab-sub">Planta 1</div>
+    </div>
+    <div class="tab" onclick="selectMaq(this,'Empalmadora · P2')">
+      Empalmadora<div class="tab-sub">Planta 2</div>
+    </div>
+    <div class="tab" onclick="selectMaq(this,'Encoladora · P1')">
+      Encoladora<div class="tab-sub">Planta 1</div>
+    </div>
+    <div class="tab" onclick="selectMaq(this,'Formadora 1 · P1')">
+      Formadora 1<div class="tab-sub">Planta 1</div>
+    </div>
+    <div class="tab" onclick="selectMaq(this,'Formadora 2 · P1')">
+      Formadora 2<div class="tab-sub">Planta 1</div>
+    </div>
+    <div class="tab" onclick="selectMaq(this,'Formadora 3 · P1')">
+      Formadora 3<div class="tab-sub">Planta 1</div>
+    </div>
+    <div class="tab" onclick="selectMaq(this,'Cortadora · P1')">
+      Cortadora<div class="tab-sub">Planta 1</div>
+    </div>
+    <div class="tab" onclick="selectMaq(this,'Impresora 1 · P1')">
+      Impresora 1<div class="tab-sub">Planta 1</div>
+    </div>
+    <div class="tab" onclick="selectMaq(this,'Impresora 2 · P1')">
+      Impresora 2<div class="tab-sub">Planta 1</div>
+    </div>
+    <div class="tab active" onclick="selectMaq(this,'Pegadora 1 · P2')">
+      Pegadora 1<div class="tab-sub">Planta 2</div>
+    </div>
+    <div class="tab" onclick="selectMaq(this,'Pegadora 2 · P1')">
+      Pegadora 2<div class="tab-sub">Planta 1</div>
+    </div>
+    <div class="tab" onclick="selectMaq(this,'Pegadora 3 · P1')">
+      Pegadora 3<div class="tab-sub">Planta 1</div>
+    </div>
+    <div class="tab" onclick="selectMaq(this,'Impresora 3 · P1')">
+      Impresora 3<div class="tab-sub">Planta 1</div>
+    </div>
+    <div class="tab" onclick="selectMaq(this,'Barnizadora · P1')">
+      Barnizadora<div class="tab-sub">Planta 1</div>
+    </div>
+    <div class="tab" onclick="selectMaq(this,'Troqueladora · P2')">
+      Troqueladora<div class="tab-sub">Planta 2</div>
+    </div>
+  </div>
+</div>
+
+<!-- INICIAR TURNO (arriba, entre Máquina y OP). Es el "candado" del formulario:
+     apenas hay una máquina elegida se habilita; al oprimirlo se desbloquea todo
+     el formulario de abajo, la máquina queda fija y aparecen Fin evento / Cerrar
+     turno / Cambiar etapa. -->
+<button class="btn-turno btn-inicio" id="btn-inicio-turno" onclick="iniciarTurno()">
+  <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+  <span>Iniciar turno</span>
+</button>
+
+<!-- FORMULARIO BLOQUEABLE: todo esto arranca bloqueado (gris, sin poder tocarse)
+     y solo se habilita al oprimir "Iniciar turno". -->
+<div id="form-gated" class="locked">
+
+<!-- ORDEN DE PRODUCCIÓN -->
+<!-- Se ve en las dos etapas. En mantenimiento la OP es opcional (ver aplicarEtapa). -->
+<div class="card" id="card_op">
+  <div class="card-title">
+    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/></svg>
+    Orden de Producción
+  </div>
+  <div class="field">
+    <label>Código OP<span id="op-opcional" style="display:none">  ·  opcional en mantenimiento</span></label>
+    <div class="op-wrap">
+      <input type="text" id="op" placeholder="Escribe para buscar..." autocomplete="off"
+        oninput="filtrarOPs(this.value)" onfocus="filtrarOPs(this.value)"
+        onblur="cerrarDropdown()" style="border-radius:8px">
+      <div class="op-dropdown" id="op-dropdown"></div>
+    </div>
+    <div id="op-status" style="font-size:11px;margin-top:4px;display:none"></div>
+    <!-- PARTE A / PARTE B: opcional. Algunas OPs vienen en dos partes; se marca
+         A o B si aplica, o se dejan ambos sin marcar si no aplica. Es una sola
+         eleccion (marcar una desmarca la otra). -->
+    <div class="parte-row">
+      <span class="parte-label">Parte (opcional):</span>
+      <button type="button" class="btn-parte" id="btn-parte-a" onclick="toggleParte('A')">Parte A</button>
+      <button type="button" class="btn-parte" id="btn-parte-b" onclick="toggleParte('B')">Parte B</button>
+    </div>
+  </div>
+  <div class="row2">
+      <div class="field">
+        <label>Cod. Referencia</label>
+      <input type="text" id="cod_referencia" placeholder="Auto" readonly>
+      <div class="auto-tag" id="tag_ref" style="display:none">⚡ auto</div>
+    </div>
+    <div class="field">
+      <label>Referencia</label>
+      <input type="text" id="referencia" placeholder="Auto" readonly style="font-size:12px">
+    </div>
+  </div>
+</div>
+
+<!-- EVENTO -->
+<div class="card">
+  <div class="card-title">
+    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+    Razón de paro
+  </div>
+  <div class="field">
+    <label>Código de la razón</label>
+    <div class="op-wrap">
+      <input type="text" id="cod_evento" placeholder="Escribe para buscar..." autocomplete="off"
+        oninput="filtrarEventos(this.value)" onfocus="filtrarEventos(this.value)"
+        onblur="cerrarDropdownEvento()" style="border-radius:8px">
+      <div class="op-dropdown" id="evento-dropdown"></div>
+    </div>
+  </div>
+  <div class="field">
+    <label>Nombre de la razón de paro</label>
+    <input type="text" id="evento_nombre" placeholder="Nombre automático" readonly>
+    <div class="auto-tag" id="tag_evento" style="display:none">⚡ auto</div>
+  </div>
+</div>
+
+<!-- PRODUCCIÓN -->
+<div class="card" id="card_produccion">
+  <div class="card-title">
+    <svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+    Producción
+  </div>
+  <div class="field">
+    <label>Lectura del contador (tiros / unds)</label>
+    <input type="number" id="val_cantidad" min="0" placeholder="0"
+      style="font-size:22px; font-weight:600; text-align:center;"
+      oninput="this.value = Math.max(0, parseInt(this.value) || 0); actualizarLectura()">
+    <!-- Pista bajo el campo: muestra la última lectura registrada de este
+         operario en esta OP y máquina, avisa en rojo si la nueva no es mayor,
+         y en verde muestra la producción que se va a guardar. -->
+    <div id="lectura-hint" style="font-size:11px; margin-top:6px; text-align:center; line-height:1.4; display:none;"></div>
+  </div>
+</div>
+
+<!-- SUB EVENTOS: aparece cuando el evento es TIRAJE o GRADUACIÓN. Cada parada
+     corta (con su motivo y duración) se acumula y se guarda en la hoja Sheet2 al
+     cerrar el evento, enlazada por ID FILA. El evento no se interrumpe. -->
+<div class="card" id="card_microparo" style="display:none;">
+  <div class="card-title">
+    <svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+    Sub eventos
+  </div>
+
+  <!-- Estado A: en reposo → botón para iniciar un sub evento -->
+  <div id="microparo-reposo">
+    <button type="button" class="btn-microparo" onclick="iniciarMicroParo()">
+      ▶ Iniciar sub evento
+    </button>
+    <div class="microparo-conteo">Sub eventos de este evento: <strong id="microparo-num">0</strong></div>
+  </div>
+
+  <!-- Estado B: sub evento en curso → cronómetro en vivo + terminar -->
+  <div id="microparo-curso" style="display:none;">
+    <div class="microparo-crono">
+      <span class="punto"></span>
+      <span id="microparo-tiempo">00:00</span>
+    </div>
+    <button type="button" class="btn-microparo btn-microparo-fin" onclick="terminarMicroParo()">
+      ■ Terminar sub evento
+    </button>
+  </div>
+
+  <!-- Estado C: terminado → pedir el motivo antes de guardar -->
+  <div id="microparo-motivo" style="display:none;">
+    <div class="microparo-resumen">Duró <strong id="microparo-duracion">00:00</strong> · ¿cuál fue el motivo?</div>
+    <div class="field">
+      <label>Motivo del sub evento</label>
+      <!-- Desplegable con la lista de la hoja SUBEVENTOS (igual que el de razón
+           de paro): se escribe para filtrar y se escoge de la lista. -->
+      <div class="op-wrap">
+        <input type="text" id="microparo-cod" placeholder="Escribe para buscar..." autocomplete="off"
+          oninput="filtrarSubEventos(this.value)" onfocus="filtrarSubEventos(this.value)"
+          onblur="cerrarDropdownSubEvento()" style="border-radius:8px">
+        <div class="op-dropdown" id="subevento-dropdown"></div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Nombre del sub evento</label>
+      <input type="text" id="microparo-sub-evento" placeholder="Nombre automático" readonly>
+    </div>
+    <div class="field">
+      <label>Observación (opcional)</label>
+      <input type="text" id="microparo-obs" placeholder="Detalle adicional...">
+    </div>
+    <button type="button" class="btn-microparo" id="btn-guardar-microparo" onclick="guardarMicroParo()" disabled>
+      Guardar sub evento
+      <div class="spinner" id="spinner-microparo"></div>
+    </button>
+    <button type="button" class="btn-microparo-cancelar" onclick="descartarMicroParo()">Descartar</button>
+  </div>
+</div>
+
+
+<!-- OPERARIO -->
+<div class="card">
+  <div class="card-title">
+    <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+    Operario
+  </div>
+  <div class="field">
+    <label>Nombre del operario</label>
+    <div class="op-wrap">
+      <input type="text" id="operario_nombre" placeholder="Escribe para buscar..." autocomplete="off"
+        oninput="filtrarOperarios(this.value)" onfocus="filtrarOperarios(this.value)"
+        onblur="cerrarDropdownOperario()" style="border-radius:8px">
+      <div class="op-dropdown" id="operario-dropdown"></div>
+    </div>
+  </div>
+  <div class="field">
+    <label>ID Operario</label>
+    <input type="text" id="operario_id" placeholder="Auto" readonly>
+    <div class="auto-tag" id="tag_operario" style="display:none">⚡ auto</div>
+  </div>
+</div>
+
+<!-- (La tarjeta "Inspeccionó" se eliminó: ahora el inspector se identifica al
+     ingresar en la pantalla de login, y su nombre se guarda automáticamente en
+     la columna INSPECCIONÓ del Excel para todos los eventos del turno.) -->
+
+<!-- OBSERVACIONES -->
+<div class="card">
+  <div class="card-title">
+    <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+    Observaciones
+  </div>
+  <div class="field">
+    <textarea id="observaciones" placeholder="Escribe aquí cualquier observación relevante..."></textarea>
+  </div>
+</div>
+</div>
+<!-- ← fin del formulario bloqueable (#form-gated) -->
+
+<!-- HISTORIAL DE LA OP (HOY · MISMA MÁQUINA) -->
+<div class="card" id="card_historial" style="display:none;">
+  <div class="card-title" id="historial-toggle" style="cursor:pointer; justify-content:space-between; margin-bottom:0;">
+    <span style="display:flex; align-items:center; gap:6px;">
+      <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6a7 7 0 1 1 7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.93 8.93 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8z"/></svg>
+      Historial de hoy · esta OP
+    </span>
+    <span id="historial-arrow" style="font-size:13px; color:var(--texto-sub);">▾</span>
+  </div>
+  <div id="historial-body" style="margin-top:12px;">
+    <div id="historial-lista"></div>
+    <div id="historial-total" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--gris-borde); font-size:13px; color:var(--verde-oscuro); text-align:right;"></div>
+  </div>
+</div>
+
+<!-- ESTADO DEL TURNO: visible solo mientras el turno está abierto -->
+<div class="turno-status" id="turno-status">
+  <span class="punto"></span>
+  <span>Turno en curso · inicio <strong id="turno-hora-inicio">--:--</strong> · evento actual desde <strong id="evento-hora-inicio">--:--</strong></span>
+</div>
+
+<!-- CAMBIAR ETAPA: deja pasar de productiva a mantenimiento (o al revés) sin
+     cerrar el turno ni volver a loguearse. Si hay un evento en curso, primero lo
+     cierra (igual que "Fin evento": guarda con la hora actual y esa misma hora
+     queda como inicio del siguiente), y el evento que arranca ya nace en la
+     etapa nueva. Solo cambia con confirmación. -->
+<button class="btn-turno btn-cambiar-etapa" id="btn-cambiar-etapa" onclick="pedirCambioEtapa()" style="display:none">
+  <svg viewBox="0 0 24 24"><path d="M12 6V3L8 7l4 4V8a4 4 0 1 1-4 4H6a6 6 0 1 0 6-6z"/></svg>
+  <span>Cambiar etapa</span>
+</button>
+
+<!-- BOTONES DEL TURNO (abajo). "Iniciar turno" se movió ARRIBA (entre Máquina y
+     OP). Estos tres arrancan OCULTOS y aparecen al oprimir "Iniciar turno".
+     - Fin evento: cierra el evento actual (lo guarda) e inicia el siguiente en el
+       mismo instante, para no perder minutos. Se puede repetir todas las veces.
+     - Cerrar turno: al pulsarlo se abre una ventana de confirmación (Sí / No).
+       Con "Sí" guarda el evento abierto (si hay uno), cierra el turno y regresa a
+       la pantalla de ingreso. Con "No" no pasa nada. -->
+<button class="btn-turno btn-fin-evento" id="btn-fin-evento" onclick="finEvento()" disabled style="display:none">
+  <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+  <span>Fin evento</span>
+  <div class="spinner" id="spinner-fin"></div>
+</button>
+<button class="btn-turno btn-cerrar" id="btn-cerrar-turno" onclick="cerrarTurno()" style="display:none">
+  <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+  <span>Cerrar turno</span>
+  <div class="spinner" id="spinner-cerrar"></div>
+</button>
+
+<div class="banner" id="banner"></div>
+<div class="spacer"></div>
+
+<!-- ── MODAL: confirmar cierre de turno ─────────────────────────────────────
+     Se abre al pulsar "Cerrar turno". "Sí" cierra el turno y vuelve al login;
+     "No" solo cierra este mensaje y sigue en el mismo evento. -->
+<div class="modal-overlay" id="modal-cerrar">
+  <div class="modal-box">
+    <div class="modal-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+    </div>
+    <div class="modal-title">¿Seguro que quieres cerrar el turno?</div>
+    <div class="modal-text">Se guardará el evento abierto (si hay uno) y volverás a la pantalla de ingreso.</div>
+    <div class="modal-actions">
+      <button class="modal-btn modal-no" onclick="cancelarCerrarTurno()">No</button>
+      <button class="modal-btn modal-si" onclick="confirmarCerrarTurno()">Sí</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: confirmar cambio de ETAPA ─────────────────────────────────────
+     Se abre al pulsar "Cambiar etapa". El texto se rellena en pedirCambioEtapa()
+     con la etapa de destino. "Sí" cierra el evento en curso (si hay uno) y
+     cambia; "No" solo cierra este mensaje y no cambia nada. -->
+<div class="modal-overlay" id="modal-cambiar-etapa">
+  <div class="modal-box">
+    <div class="modal-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+    </div>
+    <div class="modal-title" id="modal-cambiar-etapa-titulo">¿Cambiar de etapa?</div>
+    <div class="modal-text" id="modal-cambiar-etapa-texto"></div>
+    <div class="modal-actions">
+      <button class="modal-btn modal-no" onclick="cancelarCambioEtapa()">No</button>
+      <button class="modal-btn modal-si" onclick="confirmarCambioEtapa()">Sí</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ——— Estado global ———
+let maquina = 'Pegadora 1 · P2';
+let evento_nombre = '';
+let todasLasOPs = [];
+let opValida = false;
+// Parte de la OP (opcional): '', 'A' o 'B'. Se guarda en la columna PARTE.
+let parteSel = '';
+function toggleParte(v) {
+  parteSel = (parteSel === v) ? '' : v;   // tocar la marcada la quita; una sola a la vez
+  document.getElementById('btn-parte-a').classList.toggle('active', parteSel === 'A');
+  document.getElementById('btn-parte-b').classList.toggle('active', parteSel === 'B');
+}
+// Nombre del inspector que ingresó en el login. Se guarda en la columna
+// INSPECCIONÓ del Excel para todos los eventos de su turno.
+let inspectorLogueado = '';
+// ——— Estado del turno (botones: Iniciar turno / Fin evento / Cerrar turno) ———
+// Mientras turnoActivo es true, el contexto del turno (máquina, OP, operario)
+// queda bloqueado y solo cambian el evento y la lectura del contador.
+let turnoActivo = false;
+let eventoInicio = null;    // inicio del EVENTO actualmente abierto { fecha, hora }
+let turnoInicioHora = null; // hora en que se abrió el turno (solo para mostrar)
+let partiendoMedianoche = false;  // evita partir el evento dos veces mientras se guarda el corte
+// Registros del día para la OP + máquina actuales (los trae /historial_op).
+// Se declara aquí, y no en el bloque del historial, porque actualizarBotones()
+// corre desde el reloj apenas carga la página y ya necesita consultarlo.
+let histRegistros = [];
+// ETAPA del turno: la elige el inspector en la ventana que sale después del
+// login y antes de iniciar el turno. Manda sobre todo el formulario:
+//   'productiva'    → la OP es obligatoria y se registran lecturas del contador.
+//   'mantenimiento' → no se pide OP ni cantidades (la máquina no está produciendo).
+// Vacía significa que todavía no ha elegido (no debería poder usar el formulario).
+let etapa = '';
+// Etapa que se aplicará si el inspector confirma el cambio en el modal
+// "Cambiar etapa" (se llena en pedirCambioEtapa, se consume en confirmarCambioEtapa).
+let etapaDestino = '';
+
+// ——— Estado de MICRO PAROS (paradas cortas dentro de un TIRAJE) ———
+let microParoActivo   = false;  // hay un micro paro cronometrándose ahora
+let microParoInicio   = null;   // { fecha, hora HH:MM:SS } del inicio
+let microParoFin      = null;   // { fecha, hora HH:MM:SS } del fin
+let microParoInicioMs = 0;      // Date.now() al iniciar, para medir la duración exacta
+let microParoSegundos = 0;      // duración medida al terminar (segundos)
+let microParoTimer    = null;   // setInterval del cronómetro en vivo
+let microParoNum      = 0;      // cuántos micro paros van en el tiraje actual (solo informativo)
+// Sub eventos acumulados del evento en curso. Se mandan junto con el evento al
+// cerrarlo (para que lleven su ID FILA) y se vacía después de guardar.
+let subEventosBuffer  = [];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SESIÓN QUE SOBREVIVE AL REFRESCO
+// ───────────────────────────────────────────────────────────────────────────
+// Todo lo de arriba vive en memoria del navegador: si el inspector refresca la
+// página (o el celular la recarga solo por quedarse sin batería, cambiar de app,
+// perder el WiFi, o porque se actualizó el desarrollo), se perdía el turno, la
+// hora de inicio del evento y —lo más grave— los sub eventos acumulados que
+// todavía no se habían guardado en el Excel.
+//
+// Para evitarlo se guarda una FOTO del estado en el propio celular y se restaura
+// al abrir. Así, refrescar solo sirve para traer la versión nueva del código: lo
+// registrado sigue intacto. La foto se borra al cerrar el turno.
+//
+// Se guarda en el celular, NO en el servidor: cada teléfono conserva lo suyo y no
+// se pisan entre inspectores.
+const CLAVE_ESTADO = 'registro_paros_estado';
+
+function _almacen() {
+  // Si el navegador no deja usar el almacenamiento (modo restringido), la app
+  // sigue funcionando igual que antes: simplemente no recuerda al refrescar.
+  try {
+    const p = window.localStorage;
+    p.setItem('__prueba__', '1'); p.removeItem('__prueba__');
+    return p;
+  } catch (e) { return null; }
+}
+
+function guardarEstado() {
+  const p = _almacen();
+  if (!p) return;
+  // Solo tiene sentido recordar si hay una sesión abierta.
+  if (!inspectorLogueado) { try { p.removeItem(CLAVE_ESTADO); } catch (e) {} return; }
+  try {
+    const foto = {
+      guardadoEn:      Date.now(),
+      inspector:       inspectorLogueado,
+      etapa:           etapa,
+      maquina:         maquina,
+      turnoActivo:     turnoActivo,
+      turnoInicioHora: turnoInicioHora,
+      eventoInicio:    eventoInicio,
+      parteSel:        parteSel,
+      opValida:        opValida,
+      evento_nombre:   evento_nombre,
+      campos: {
+        op:              document.getElementById('op').value,
+        cod_referencia:  document.getElementById('cod_referencia').value,
+        referencia:      document.getElementById('referencia').value,
+        cod_evento:      document.getElementById('cod_evento').value,
+        operario_id:     document.getElementById('operario_id').value,
+        operario_nombre: document.getElementById('operario_nombre').value,
+        val_cantidad:    document.getElementById('val_cantidad').value,
+        observaciones:   document.getElementById('observaciones').value
+      },
+      subEventos:      subEventosBuffer,
+      microParoNum:    microParoNum,
+      // Sub evento cronometrándose: se guarda el instante de arranque para que
+      // el cronómetro siga contando desde donde iba, no desde cero.
+      microParoActivo:   microParoActivo,
+      microParoInicio:   microParoInicio,
+      microParoInicioMs: microParoInicioMs
+    };
+    p.setItem(CLAVE_ESTADO, JSON.stringify(foto));
+  } catch (e) { /* si falla, no se interrumpe el registro */ }
+}
+
+function olvidarEstado() {
+  const p = _almacen();
+  if (!p) return;
+  try { p.removeItem(CLAVE_ESTADO); } catch (e) {}
+}
+
+function restaurarEstado() {
+  const p = _almacen();
+  if (!p) return false;
+  let foto;
+  try {
+    const txt = p.getItem(CLAVE_ESTADO);
+    if (!txt) return false;
+    foto = JSON.parse(txt);
+  } catch (e) { return false; }
+  if (!foto || !foto.inspector) return false;
+
+  // Una foto de hace más de 16 horas es de un turno viejo que quedó sin cerrar:
+  // no se restaura para no arrastrar datos de otro día.
+  if (!foto.guardadoEn || (Date.now() - foto.guardadoEn) > 16 * 3600 * 1000) {
+    olvidarEstado();
+    return false;
+  }
+
+  inspectorLogueado = foto.inspector;
+  etapa             = foto.etapa || '';
+  maquina           = foto.maquina || maquina;
+  turnoActivo       = !!foto.turnoActivo;
+  turnoInicioHora   = foto.turnoInicioHora || null;
+  eventoInicio      = foto.eventoInicio || null;
+  parteSel          = foto.parteSel || '';
+  opValida          = !!foto.opValida;
+  evento_nombre     = foto.evento_nombre || '';
+  subEventosBuffer  = Array.isArray(foto.subEventos) ? foto.subEventos : [];
+  microParoNum      = foto.microParoNum || 0;
+
+  // Cerrar login y la ventana de etapa: la sesión ya venía abierta.
+  document.getElementById('login-overlay').style.display = 'none';
+  document.getElementById('etapa-overlay').style.display = 'none';
+  document.getElementById('inspector-actual').textContent = inspectorLogueado;
+
+  const c = foto.campos || {};
+  ['op','cod_referencia','referencia','cod_evento','operario_id','operario_nombre',
+   'val_cantidad','observaciones'].forEach(function(id) {
+    if (c[id] !== undefined) document.getElementById(id).value = c[id];
+  });
+  document.getElementById('evento_nombre').value = evento_nombre;
+  if (evento_nombre) document.getElementById('tag_evento').style.display = 'inline-flex';
+
+  // Vuelve a marcar la pestaña de la máquina que estaba escogida.
+  document.querySelectorAll('.tab').forEach(function (t) {
+    const suya = (t.textContent || '').replace(/\s+/g, ' ').trim();
+    const guardada = (maquina || '').replace(/\s+/g, ' ').trim();
+    // El texto de la pestaña trae nombre + planta ("Impresora 1 Planta 1"); basta
+    // con que contenga el nombre de la máquina guardada ("Impresora 1 · P1").
+    const nombreMaq = guardada.split('·')[0].trim().toUpperCase();
+    t.classList.toggle('active', !!nombreMaq && suya.toUpperCase().indexOf(nombreMaq) === 0);
+  });
+  aplicarEtapa();
+  document.getElementById('btn-parte-a').classList.toggle('active', parteSel === 'A');
+  document.getElementById('btn-parte-b').classList.toggle('active', parteSel === 'B');
+
+  if (turnoActivo) {
+    // Deja la pantalla igual que después de "Iniciar turno".
+    document.getElementById('turno-hora-inicio').textContent  = turnoInicioHora || '—';
+    document.getElementById('evento-hora-inicio').textContent = eventoInicio ? eventoInicio.hora : '—';
+    document.getElementById('turno-status').style.display = 'flex';
+    bloquearFormulario(false);
+    bloquearContextoTurno(true);
+    document.getElementById('btn-inicio-turno').style.display  = 'none';
+    document.getElementById('btn-fin-evento').style.display    = '';
+    document.getElementById('btn-cerrar-turno').style.display  = '';
+    document.getElementById('btn-cambiar-etapa').style.display = '';
+    document.getElementById('microparo-num').textContent = microParoNum;
+    cargarHistorial();
+
+    // Si había un sub evento corriendo, se retoma el cronómetro donde iba.
+    if (foto.microParoActivo && foto.microParoInicioMs) {
+      microParoActivo   = true;
+      microParoInicio   = foto.microParoInicio;
+      microParoInicioMs = foto.microParoInicioMs;
+      document.getElementById('microparo-reposo').style.display = 'none';
+      document.getElementById('microparo-motivo').style.display = 'none';
+      document.getElementById('microparo-curso').style.display = 'block';
+      if (microParoTimer) clearInterval(microParoTimer);
+      microParoTimer = setInterval(tickMicroParo, 1000);
+      tickMicroParo();
+    }
+  }
+
+  actualizarCardMicroParo();
+  actualizarBotones();
+
+  const pend = subEventosBuffer.length;
+  mostrarBanner('✓ Se recuperó tu sesión' + (pend ? ' con ' + pend + ' sub evento(s) pendiente(s)' : ''), 'ok');
+  return true;
+}
+
+// Guarda la foto cada pocos segundos (recoge también lo que se va escribiendo)
+// y justo antes de que la página se cierre o se refresque.
+setInterval(guardarEstado, 3000);
+window.addEventListener('beforeunload', guardarEstado);
+window.addEventListener('pagehide', guardarEstado);
+
+// Al abrir la página se intenta retomar la sesión anterior. Si no hay ninguna
+// (o ya venció), la app arranca normal pidiendo la codigo.
+window.addEventListener('DOMContentLoaded', function () {
+  try { restaurarEstado(); } catch (e) { olvidarEstado(); }
+});
+
+// ——— Cargar lista de OPs al iniciar ———
+fetch('/lista_ops')
+  .then(r => r.json())
+  .then(lista => { todasLasOPs = lista; });
+
+// ——— Autocomplete OP ———
+function filtrarOPs(texto) {
+  const dropdown = document.getElementById('op-dropdown');
+  const input = document.getElementById('op');
+  const q = texto.trim().toUpperCase();
+
+  if (!q) { dropdown.style.display = 'none'; limpiarDatosOP(); return; }
+
+  const coincidencias = todasLasOPs.filter(op => op.toUpperCase().includes(q)).slice(0, 30);
+
+  if (coincidencias.length === 0) {
+    dropdown.innerHTML = '<div class="op-item" style="color:var(--texto-sub)">Sin resultados</div>';
+    dropdown.style.display = 'block';
+    limpiarDatosOP();
+    input.classList.add('op-invalid');
+    input.classList.remove('op-valid');
+    return;
+  }
+
+  dropdown.innerHTML = coincidencias.map(op =>
+    `<div class="op-item" onmousedown="seleccionarOP('${op}')">${op}</div>`
+  ).join('');
+  dropdown.style.display = 'block';
+}
+
+function seleccionarOP(op) {
+  document.getElementById('op').value = op;
+  document.getElementById('op-dropdown').style.display = 'none';
+  buscarOP(op);
+}
+
+function cerrarDropdown() {
+  setTimeout(() => {
+    document.getElementById('op-dropdown').style.display = 'none';
+    // Validar si lo que quedó escrito es una OP válida
+    const val = document.getElementById('op').value.trim();
+    const input = document.getElementById('op');
+    const status = document.getElementById('op-status');
+    if (val && !todasLasOPs.includes(val)) {
+      input.classList.add('op-invalid');
+      input.classList.remove('op-valid');
+      status.textContent = '⚠ OP no encontrada en la base de datos';
+      status.style.color = 'var(--rojo)';
+      status.style.display = 'block';
+      opValida = false;
+      limpiarDatosOP();
+    } else if (val) {
+      input.classList.remove('op-invalid');
+      input.classList.add('op-valid');
+      status.style.display = 'none';
+      opValida = true;
+    } else {
+      // Campo vacío: no es un error en sí (en mantenimiento y falta de
+      // programación es un estado válido). Se limpian el borde verde/rojo y el
+      // aviso; si el evento sí exige OP, formCompleto() la sigue pidiendo.
+      input.classList.remove('op-invalid', 'op-valid');
+      status.style.display = 'none';
+      opValida = false;
+    }
+    actualizarBotones();
+  }, 150);
+}
+
+function limpiarDatosOP() {
+  opValida = false;
+  document.getElementById('cod_referencia').value = '';
+  document.getElementById('referencia').value = '';
+  document.getElementById('tag_ref').style.display = 'none';
+}
+
+function tickReloj() {
+  const now = new Date();
+  const f = now.toLocaleDateString('es-CO', { weekday:'short', day:'2-digit', month:'2-digit', year:'numeric' });
+  const t = now.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: false });
+  document.getElementById('reloj-fecha').textContent = f + ' · ' + t;
+  const h = now.getHours();
+  document.getElementById('reloj-turno').textContent = h >= 6 && h < 14 ? 'Turno Mañana' : h >= 14 && h < 22 ? 'Turno Tarde' : 'Turno Noche';
+  // Revisa cada segundo el estado de los botones (así "Cerrar turno" se
+  // habilita solo al llegar la 1:30 p. m., sin recargar la página).
+  actualizarBotones();
+  verificarMedianoche();   // turno noche: si el evento cruzó las 12, lo parte
+}
+tickReloj();
+setInterval(tickReloj, 1000);
+
+// Si el celular estaba dormido o la pestaña en segundo plano a medianoche, el
+// reloj no corre; al reactivarse se revisa de inmediato si pasó la medianoche.
+document.addEventListener('visibilitychange', function () {
+  if (!document.hidden) verificarMedianoche();
+});
+
+// ——— PARTIR EL EVENTO A MEDIANOCHE (turno noche que cruza las 12) ————————————
+// El turno noche (9pm–6am) cruza la medianoche. Si un evento sigue abierto al
+// pasar de día, se PARTE en dos: el pedazo hasta las 23:59 se guarda con la fecha
+// del día que termina, y el MISMO evento (misma OP, operario, etc.) se reabre a
+// las 00:00 del día nuevo y sigue corriendo hasta que el inspector lo cierre.
+//
+// Las horas del corte quedan FIJAS en la medianoche, sin importar cuándo lo
+// detecte la app. Así, si el celular estaba dormido a las 12 y se reactiva a las
+// 2am, el corte se registra en ese momento pero con las horas de medianoche
+// (23:59 del día que terminó → 00:00 del día nuevo), no con la hora real.
+//
+// La producción NO se puede medir a medianoche (nadie lee el contador ahí), así
+// que el pedazo de antes queda con cantidad 0 y la producción se registra
+// completa en el pedazo del día siguiente, cuando el inspector cierra el evento
+// y digita la lectura.
+
+function _sumarUnDia(fechaStr) {
+  const d = new Date(fechaStr + 'T12:00:00');   // mediodía: evita saltos por zona horaria
+  d.setDate(d.getDate() + 1);
+  return _fechaActualStr(d);
+}
+
+function verificarMedianoche() {
+  if (!turnoActivo || !eventoInicio || partiendoMedianoche) return;
+  if (microParoActivo) return;   // esperar a que termine el micro paro en curso
+  const hoy = _fechaActualStr(new Date());
+  if (eventoInicio.fecha >= hoy) return;   // el evento arrancó hoy: nada que partir
+  partirEnMedianoche(eventoInicio.fecha);
+}
+
+function partirEnMedianoche(fechaEvento) {
+  partiendoMedianoche = true;
+  const nuevoInicio = { fecha: _sumarUnDia(fechaEvento), hora: '00:00' };
+
+  // ¿Hay un evento COMPLETO para guardar? (evento seleccionado; y en productiva,
+  // OP válida). Si no —p. ej. el formulario quedó en blanco entre dos eventos—,
+  // no hay fila que guardar: solo se corre el inicio a la medianoche del día nuevo.
+  const hayEvento = !!(document.getElementById('cod_evento').value.trim() && evento_nombre) && opOk();
+  if (!hayEvento) {
+    eventoInicio = nuevoInicio;
+    document.getElementById('evento-hora-inicio').textContent = '00:00';
+    partiendoMedianoche = false;
+    return;
+  }
+
+  // Desglose de máquina/planta, igual que en guardarEvento.
+  const partes = maquina.split('·');
+  const maquinaNombre = partes[0].trim().toUpperCase();
+  const plantaCod = partes[1] ? partes[1].trim() : '';
+  const plantaNombre = plantaCod === 'P1' ? 'PLANTA 1' : plantaCod === 'P2' ? 'PLANTA 2' : plantaCod === 'P3' ? 'PLANTA 3' : plantaCod;
+
+  const obs = document.getElementById('observaciones').value.trim();
+  const data = {
+    maquina:          maquinaNombre,
+    planta:           plantaNombre,
+    etapa:            etapa,
+    op:               document.getElementById('op').value.trim(),
+    cod_referencia:   document.getElementById('cod_referencia').value,
+    referencia:       document.getElementById('referencia').value,
+    cod_evento:       document.getElementById('cod_evento').value.trim(),
+    evento:           evento_nombre,
+    fecha_inicio:     eventoInicio.fecha,
+    hora_inicio:      eventoInicio.hora,
+    fecha_fin:        fechaEvento,      // cierra en el MISMO día en que arrancó
+    hora_fin:         '23:59',
+    cantidad:         0,                // sin lectura a medianoche: la producción va al día siguiente
+    operario_id:      document.getElementById('operario_id').value,
+    operario_nombre:  document.getElementById('operario_nombre').value.trim(),
+    inspeccionó:      inspectorLogueado,
+    observaciones:    (obs ? obs + ' · ' : '') + '[corte automático de medianoche]',
+    parte:            parteSel,   // A / B / vacio (opcional), igual que el evento
+    // Los sub eventos ocurridos antes de medianoche pertenecen a este pedazo:
+    // se guardan con el ID FILA del corte del día que termina.
+    sub_eventos:      subEventosBuffer
+  };
+
+  fetch('/guardar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+  .then(r => r.json())
+  .then(res => {
+    partiendoMedianoche = false;
+    if (res.error) {
+      // Si falla (Excel abierto, red), NO se mueve el inicio: el evento sigue
+      // "abierto" y el corte se reintenta en el siguiente tic del reloj.
+      mostrarBanner('⚠ No se pudo partir el evento a medianoche (' + res.error + '). Se reintenta.', 'err');
+      return;
+    }
+    // El mismo evento continúa en el día nuevo, arrancando a las 00:00.
+    eventoInicio = nuevoInicio;
+    // Los sub eventos de antes de medianoche ya quedaron guardados con el corte;
+    // el nuevo día arranca con la lista vacía.
+    subEventosBuffer = [];
+    microParoNum = 0;
+    document.getElementById('microparo-num').textContent = '0';
+    document.getElementById('evento-hora-inicio').textContent = '00:00';
+    cargarHistorial();   // cambió el día: recarga la referencia del contador del día nuevo
+    mostrarBanner('⏱ Evento partido a medianoche · continúa el mismo evento en el día nuevo', 'ok');
+  })
+  .catch(() => {
+    partiendoMedianoche = false;
+    mostrarBanner('Error de conexión al partir el evento a medianoche. Se reintenta.', 'err');
+  });
+}
+
+// ——— Máquina ———
+function selectMaq(el, nombre) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  maquina = nombre;
+}
+
+// ——— Buscar OP ———
+function buscarOP(op) {
+  if (!op) return;
+  fetch('/buscar_op?op=' + encodeURIComponent(op))
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById('cod_referencia').value = d.cod_referencia || '';
+      document.getElementById('referencia').value = d.referencia || '';
+      document.getElementById('tag_ref').style.display = d.cod_referencia ? 'inline-flex' : 'none';
+      opValida = true;
+      actualizarBotones();
+    });
+}
+
+// ——— Autocomplete Eventos ———
+let todosLosEventos = [];
+
+fetch('/lista_eventos')
+  .then(r => r.json())
+  .then(lista => { todosLosEventos = lista; });
+
+// ——— Autocomplete de MOTIVOS DE SUB EVENTO (hoja SUBEVENTOS) ———
+// Misma mecánica que el de razones de paro: se escribe para filtrar por código o
+// nombre y se escoge de la lista, en vez de escribir el motivo a mano.
+let todosLosSubEventos = [];
+
+fetch('/lista_sub_eventos')
+  .then(r => r.json())
+  .then(lista => { todosLosSubEventos = lista; });
+
+function filtrarSubEventos(texto) {
+  const dropdown = document.getElementById('subevento-dropdown');
+  const q = (texto || '').trim().toUpperCase();
+  if (!q) { dropdown.style.display = 'none'; return; }
+
+  const coincidencias = todosLosSubEventos.filter(e =>
+    String(e.cod).toUpperCase().includes(q) || String(e.nombre).toUpperCase().includes(q)
+  ).slice(0, 20);
+
+  if (coincidencias.length === 0) {
+    dropdown.innerHTML = '<div class="op-item" style="color:var(--texto-sub)">Sin resultados</div>';
+    dropdown.style.display = 'block';
+    return;
+  }
+
+  dropdown.innerHTML = coincidencias.map(e =>
+    `<div class="op-item" onmousedown="seleccionarSubEvento('${e.cod}','${String(e.nombre).replace(/'/g,"\\'")}')">
+      ${e.cod}<div class="op-item-ref">${e.nombre}</div>
+    </div>`
+  ).join('');
+  dropdown.style.display = 'block';
+}
+
+function seleccionarSubEvento(cod, nombre) {
+  document.getElementById('microparo-cod').value = cod;
+  document.getElementById('microparo-sub-evento').value = nombre;
+  document.getElementById('subevento-dropdown').style.display = 'none';
+  actualizarBtnGuardarMicroParo();   // ya hay motivo: se habilita "Guardar sub evento"
+}
+
+function cerrarDropdownSubEvento() {
+  setTimeout(() => {
+    document.getElementById('subevento-dropdown').style.display = 'none';
+  }, 150);
+}
+
+function filtrarEventos(texto) {
+  const dropdown = document.getElementById('evento-dropdown');
+  const q = texto.trim().toUpperCase();
+  if (!q) { dropdown.style.display = 'none'; return; }
+
+  const coincidencias = todosLosEventos.filter(e =>
+    e.cod.toUpperCase().includes(q) || e.nombre.toUpperCase().includes(q)
+  ).slice(0, 20);
+
+  if (coincidencias.length === 0) {
+    dropdown.innerHTML = '<div class="op-item" style="color:var(--texto-sub)">Sin resultados</div>';
+    dropdown.style.display = 'block';
+    return;
+  }
+
+  dropdown.innerHTML = coincidencias.map(e =>
+    `<div class="op-item" onmousedown="seleccionarEvento('${e.cod}','${e.nombre.replace(/'/g,"\\'")}')">
+      ${e.cod}<div class="op-item-ref">${e.nombre}</div>
+    </div>`
+  ).join('');
+  dropdown.style.display = 'block';
+}
+
+function seleccionarEvento(cod, nombre) {
+  document.getElementById('cod_evento').value = cod;
+  document.getElementById('evento-dropdown').style.display = 'none';
+  aplicarEvento(nombre);
+}
+
+function cerrarDropdownEvento() {
+  setTimeout(() => {
+    document.getElementById('evento-dropdown').style.display = 'none';
+  }, 150);
+}
+
+function aplicarEvento(nombre) {
+  evento_nombre = nombre;
+  document.getElementById('evento_nombre').value = nombre;
+  document.getElementById('tag_evento').style.display = nombre ? 'inline-flex' : 'none';
+  // El campo de cantidad ya no depende del evento: depende de la ETAPA (en
+  // productiva se puede digitar lectura en todos los eventos, en mantenimiento
+  // en ninguno). Eso lo maneja aplicarEtapa().
+  actualizarLectura();
+  actualizarCardMicroParo();   // la tarjeta de micro paros solo aplica en TIRAJE
+}
+
+// ——— MICRO PAROS (paradas cortas dentro de un TIRAJE) ————————————————————————
+// El tiraje sigue corriendo; el micro paro es una anotación paralela con su
+// motivo y su duración. Se captura en vivo: un toque inicia el cronómetro, otro
+// lo detiene, y al detenerlo se pide el motivo antes de guardar. Se pueden
+// registrar varios en un mismo tiraje.
+
+function eventoEsTiraje() {
+  const n = (evento_nombre || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return n.includes('TIRAJE');
+}
+
+// Los sub eventos se habilitan una vez el turno está iniciado Y el formulario
+// está completo (OP según etapa, razón y operario) — o sea, lo mismo que exige
+// "Fin evento". Antes de eso la tarjeta no aparece.
+function eventoConSubEventos() {
+  return !!(turnoActivo && formCompleto());
+}
+
+// Hora con segundos (HH:MM:SS) — los micro paros son cortos, así que necesitan
+// precisión de segundos, a diferencia del resto de eventos que usan HH:MM.
+function _horaSegStr(d) {
+  return String(d.getHours()).padStart(2, '0') + ':' +
+         String(d.getMinutes()).padStart(2, '0') + ':' +
+         String(d.getSeconds()).padStart(2, '0');
+}
+// Segundos → mm:ss para mostrar en pantalla.
+function _mmss(seg) {
+  return String(Math.floor(seg / 60)).padStart(2, '0') + ':' +
+         String(seg % 60).padStart(2, '0');
+}
+
+// Muestra u oculta la tarjeta de sub eventos. Aparece apenas el evento sea
+// TIRAJE o GRADUACIÓN (sin esperar a iniciar el turno); y si un sub evento está
+// en curso, se mantiene visible pase lo que pase, para poder terminarlo.
+function actualizarCardMicroParo() {
+  const card = document.getElementById('card_microparo');
+  const visible = microParoActivo || eventoConSubEventos();
+  card.style.display = visible ? 'block' : 'none';
+  if (!visible && !microParoActivo) resetMicroParoUI();
+}
+
+// Pinta el cronómetro del sub evento en curso. Está aparte para poder retomarlo
+// tal cual si el inspector refresca la página en medio de un sub evento.
+function tickMicroParo() {
+  const seg = Math.floor((Date.now() - microParoInicioMs) / 1000);
+  document.getElementById('microparo-tiempo').textContent = _mmss(seg);
+}
+
+function resetMicroParoUI() {
+  if (microParoTimer) { clearInterval(microParoTimer); microParoTimer = null; }
+  document.getElementById('microparo-reposo').style.display = 'block';
+  document.getElementById('microparo-curso').style.display = 'none';
+  document.getElementById('microparo-motivo').style.display = 'none';
+}
+
+function iniciarMicroParo() {
+  const now = new Date();
+  microParoActivo   = true;
+  microParoInicio   = { fecha: _fechaActualStr(now), hora: _horaSegStr(now) };
+  microParoInicioMs = Date.now();
+
+  document.getElementById('microparo-reposo').style.display = 'none';
+  document.getElementById('microparo-motivo').style.display = 'none';
+  document.getElementById('microparo-curso').style.display = 'block';
+  document.getElementById('microparo-tiempo').textContent = '00:00';
+
+  // Cronómetro en vivo, actualiza cada segundo.
+  microParoTimer = setInterval(tickMicroParo, 1000);
+
+  actualizarBotones();   // bloquea Fin evento / Cerrar turno / Cambiar etapa mientras dura
+}
+
+function terminarMicroParo() {
+  if (!microParoActivo) return;
+  const now = new Date();
+  microParoFin = { fecha: _fechaActualStr(now), hora: _horaSegStr(now) };
+  if (microParoTimer) { clearInterval(microParoTimer); microParoTimer = null; }
+  microParoSegundos = Math.max(0, Math.round((Date.now() - microParoInicioMs) / 1000));
+
+  document.getElementById('microparo-duracion').textContent = _mmss(microParoSegundos);
+  document.getElementById('microparo-curso').style.display = 'none';
+  document.getElementById('microparo-motivo').style.display = 'block';
+  document.getElementById('microparo-sub-evento').value = '';
+  document.getElementById('microparo-cod').value = '';
+  document.getElementById('subevento-dropdown').style.display = 'none';
+  document.getElementById('microparo-obs').value = '';
+  actualizarBtnGuardarMicroParo();
+  // El foco va al buscador (el campo del nombre es de solo lectura).
+  document.getElementById('microparo-cod').focus();
+}
+
+function actualizarBtnGuardarMicroParo() {
+  const motivo = document.getElementById('microparo-sub-evento').value.trim();
+  document.getElementById('btn-guardar-microparo').disabled = !motivo;
+}
+
+// Descartar: el inspector se arrepiente (o fue un toque por error). No guarda nada.
+function descartarMicroParo() {
+  microParoActivo = false;
+  resetMicroParoUI();
+  actualizarCardMicroParo();
+  actualizarBotones();
+  mostrarBanner('Sub evento descartado (no se guardó)', 'ok');
+}
+
+function guardarMicroParo() {
+  const motivo = document.getElementById('microparo-sub-evento').value.trim();
+  if (!motivo) { mostrarBanner('⚠ Escribe el motivo del sub evento', 'err'); return; }
+
+  // El sub evento NO se guarda al Excel al instante: se ACUMULA en una lista y se
+  // manda junto con el evento cuando el inspector lo cierra (Fin evento / Cerrar
+  // turno / corte de medianoche). Solo así puede llevar el ID FILA del evento,
+  // que se asigna al guardar el evento. La fecha y la hora van juntas en una sola
+  // columna ("FECHA HORA INICIO" / "FECHA HORA FIN").
+  subEventosBuffer.push({
+    cod_sub_evento:    document.getElementById('microparo-cod').value.trim(),
+    sub_evento:        motivo,
+    fecha_hora_inicio: microParoInicio.fecha + ' ' + microParoInicio.hora,
+    fecha_hora_fin:    microParoFin.fecha + ' ' + microParoFin.hora,
+    duracion_segundos: microParoSegundos,
+    observaciones:     document.getElementById('microparo-obs').value.trim()
+  });
+
+  microParoNum = subEventosBuffer.length;
+  document.getElementById('microparo-num').textContent = microParoNum;
+  mostrarBanner('✓ Sub evento agregado (' + _mmss(microParoSegundos) + ' · ' + motivo + ') · se guarda al cerrar el evento', 'ok');
+
+  // Vuelve a reposo, listo para el siguiente sub evento del mismo evento.
+  microParoActivo = false;
+  resetMicroParoUI();
+  actualizarCardMicroParo();
+  actualizarBotones();
+}
+
+// ——— ETAPA DEL TURNO ————————————————————————————————————————————————————————
+// La etapa se elige una sola vez, en la ventana que sale después del login, y
+// queda fija hasta cerrar el turno. Reemplaza a la regla vieja que adivinaba por
+// el nombre del evento (dependía de cómo estuviera escrito en la maestra).
+
+function esMantenimiento() {
+  return etapa === 'mantenimiento';
+}
+
+// Muestra la ventana de etapa. Se llama justo después de un login correcto.
+function pedirEtapa() {
+  document.getElementById('etapa-overlay').style.display = 'flex';
+  window.scrollTo(0, 0);
+}
+
+// El inspector eligió: se guarda la etapa, se cierra la ventana y se acomoda el
+// formulario a lo que esa etapa permite.
+function elegirEtapa(valor) {
+  etapa = valor;
+  document.getElementById('etapa-overlay').style.display = 'none';
+  aplicarEtapa();
+  window.scrollTo(0, 0);
+}
+
+// ——— CAMBIAR ETAPA SIN CERRAR EL TURNO ————————————————————————————————————
+// Como solo hay dos etapas, el botón siempre propone la contraria a la actual.
+function pedirCambioEtapa() {
+  if (microParoActivo) { mostrarBanner('⚠ Termina el sub evento en curso antes de cambiar de etapa', 'err'); return; }
+  etapaDestino = esMantenimiento() ? 'productiva' : 'mantenimiento';
+  const nombre = etapaDestino === 'mantenimiento' ? 'Mantenimiento' : 'Productiva';
+  document.getElementById('modal-cambiar-etapa-texto').textContent =
+    turnoActivo
+      ? '¿Cambiar a ' + nombre + '? Se cerrará el evento en curso con la hora actual, y el siguiente arrancará ya en esa etapa.'
+      : '¿Cambiar a ' + nombre + '?';
+  document.getElementById('modal-cambiar-etapa').style.display = 'flex';
+}
+
+function cancelarCambioEtapa() {
+  etapaDestino = '';
+  document.getElementById('modal-cambiar-etapa').style.display = 'none';
+}
+
+// Botón "Sí" del modal de cambio de etapa. Mismo criterio que "Cerrar turno":
+// si hay un evento con datos digitados, se cierra primero (con la hora actual
+// como fin, que hereda el siguiente como inicio); si el formulario está en
+// blanco (recién se hizo "Fin evento" y aún no se llenó el próximo), no hay
+// nada que guardar y el cambio es inmediato.
+function confirmarCambioEtapa() {
+  document.getElementById('modal-cambiar-etapa').style.display = 'none';
+  const destino = etapaDestino;
+  etapaDestino = '';
+  if (!destino) return;
+
+  if (!turnoActivo) {
+    etapa = destino;
+    aplicarEtapa();
+    mostrarBanner('✓ Etapa cambiada a ' + (destino === 'mantenimiento' ? 'Mantenimiento' : 'Productiva'), 'ok');
+    return;
+  }
+
+  const hayEvento = !!(document.getElementById('cod_evento').value.trim() && evento_nombre);
+  if (!hayEvento) {
+    etapa = destino;
+    aplicarEtapa();
+    mostrarBanner('✓ Etapa cambiada a ' + (destino === 'mantenimiento' ? 'Mantenimiento' : 'Productiva'), 'ok');
+    return;
+  }
+
+  if (!validarEventoParaCerrar()) return;   // evento incompleto: avisa y no cambia nada
+  const now = new Date();
+  const fin = { fecha: _fechaActualStr(now), hora: _horaActualStr(now) };
+  guardarEvento(eventoInicio, fin, true, destino);   // true = sigue el turno, destino = etapa nueva
+}
+
+// Acomoda el formulario a la etapa elegida. Las dos tarjetas (OP y producción)
+// se ven SIEMPRE, en las dos etapas: en mantenimiento también hacen tirajes de
+// prueba y eso se registra. Lo único que cambia es que la OP deja de ser
+// obligatoria y se marca como opcional al lado de la etiqueta.
+function aplicarEtapa() {
+  const mtto = esMantenimiento();
+
+  const marca = document.getElementById('op-opcional');
+  if (marca) marca.style.display = mtto ? 'inline' : 'none';
+
+  const barra = document.getElementById('etapa-bar');
+  if (etapa) {
+    document.getElementById('etapa-actual').textContent = mtto ? 'Mantenimiento' : 'Productiva';
+    barra.style.display = 'inline';
+  } else {
+    barra.style.display = 'none';
+  }
+
+  cargarHistorial();
+  actualizarLectura();
+}
+
+// ¿El campo OP está en un estado que permite guardar?
+// Etapa productiva    → tiene que haber una OP y estar validada.
+// Etapa mantenimiento → puede ir vacía, pero si el inspector escribe algo, esa
+//                       OP tiene que existir (para que no entre basura al Excel).
+function opOk() {
+  const op = document.getElementById('op').value.trim();
+  return esMantenimiento() ? (!op || opValida) : !!(op && opValida);
+}
+
+// ——— LECTURA DEL CONTADOR: SIEMPRE MAYOR A LA ANTERIOR ————————————————————
+// El contador de la máquina es acumulativo y NUNCA arranca en cero, así que la
+// lectura nueva siempre tiene que ser mayor que la última de ESE MISMO operario
+// en esta OP, máquina y día —aunque sea por 1—, sin importar el evento ni la
+// etapa. Esa "última lectura" es justamente la suma de lo que ya se le guardó
+// (cada registro guarda la diferencia, y el primero guarda la lectura completa),
+// así que se calcula con los datos que ya trae /historial_op.
+//
+// Dos casos en los que NO se valida nada:
+//   · el operario no tiene registros previos (primer evento del día o relevo):
+//     no hay contra qué comparar;
+//   · el campo va vacío: es lo que hace el inspector cuando el contador no se
+//     movió (un paro, por ejemplo). Ese evento se guarda con producción 0.
+
+// Único evento que OBLIGA a digitar la lectura, y solo en ETAPA PRODUCTIVA.
+// En mantenimiento el campo siempre es opcional (incluido un tiraje de prueba):
+// se puede digitar, pero nunca se exige.
+function exigeLectura() {
+  if (esMantenimiento()) return false;
+  const n = (evento_nombre || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return n.includes('TIRAJE');
+}
+
+// Última lectura del contador de este operario en la OP y máquina actuales.
+// Devuelve 0 cuando no hay con qué comparar.
+function lecturaAnterior() {
+  const id = document.getElementById('operario_id').value.trim();
+  if (!id) return 0;
+  // Solo cuenta lo de LA MISMA PARTE (A / B / sin parte): al cambiar de parte el
+  // contador de la máquina se reinicia, así que cada parte arranca su propia base.
+  const p = (parteSel || '').toUpperCase();
+  return histRegistros
+    .filter(function(r) {
+      const rp = (r.parte || '').toUpperCase();
+      return String(r.operario_id || '').trim() === id && rp === p;
+    })
+    .reduce(function(s, r) { return s + (parseInt(r.cantidad) || 0); }, 0);
+}
+
+// ¿La lectura digitada se puede guardar? Enciende o apaga el botón "Fin evento".
+function lecturaOk() {
+  const anterior = lecturaAnterior();
+  if (anterior <= 0) return true;                       // sin referencia previa
+  const lectura = parseInt(document.getElementById('val_cantidad').value) || 0;
+  if (lectura <= 0) return true;                        // campo vacío: el contador no se movió
+  return lectura > anterior;
+}
+
+// Pinta la pista que va debajo del campo de la lectura.
+function actualizarLectura() {
+  const hint  = document.getElementById('lectura-hint');
+  const input = document.getElementById('val_cantidad');
+  input.style.borderColor = '';
+
+  if (!etapa) {                 // todavía no ha elegido etapa: nada que mostrar
+    hint.style.display = 'none';
+    actualizarBotones();
+    return;
+  }
+
+  const anterior = lecturaAnterior();
+  const lectura  = parseInt(input.value) || 0;
+  hint.style.display = 'block';
+
+  if (!document.getElementById('operario_id').value.trim()) {
+    hint.style.color = 'var(--texto-sub)';
+    hint.textContent = 'Selecciona el operario para ver su última lectura.';
+  } else if (anterior <= 0) {
+    hint.style.color = 'var(--texto-sub)';
+    hint.textContent = 'Primera lectura de este operario.';
+  } else if (lectura <= 0) {
+    hint.style.color = 'var(--texto-sub)';
+    hint.textContent = 'Última lectura: ' + anterior.toLocaleString('es-CO') +
+                       (exigeLectura() ? ' · la nueva debe ser mayor.'
+                                       : ' · si el contador no se movió, déjalo vacío.');
+  } else if (lectura <= anterior) {
+    hint.style.color = 'var(--rojo)';
+    hint.textContent = 'La lectura debe ser mayor a ' + anterior.toLocaleString('es-CO') +
+                       '. Si el contador no se movió, deja el campo vacío.';
+    input.style.borderColor = 'var(--rojo)';
+  } else {
+    hint.style.color = 'var(--verde-oscuro)';
+    hint.textContent = 'Producción de este evento: ' + (lectura - anterior).toLocaleString('es-CO') +
+                       ' · última lectura ' + anterior.toLocaleString('es-CO') + '.';
+  }
+  actualizarBotones();
+}
+
+
+let todosLosOperarios = [];
+
+fetch('/lista_operarios')
+  .then(r => r.json())
+  .then(lista => { todosLosOperarios = lista; });
+
+function filtrarOperarios(texto) {
+  const dropdown = document.getElementById('operario-dropdown');
+  const q = texto.trim().toUpperCase();
+  if (!q) { dropdown.style.display = 'none'; return; }
+
+  const coincidencias = todosLosOperarios.filter(o =>
+    o.nombre.toUpperCase().includes(q)
+  ).slice(0, 20);
+
+  if (coincidencias.length === 0) {
+    dropdown.innerHTML = '<div class="op-item" style="color:var(--texto-sub)">Sin resultados</div>';
+    dropdown.style.display = 'block';
+    return;
+  }
+
+  dropdown.innerHTML = coincidencias.map(o =>
+    `<div class="op-item" onmousedown="seleccionarOperario('${o.id}','${o.nombre.replace(/'/g,"\\'")}')">
+      ${o.nombre}<div class="op-item-ref">ID: ${o.id}</div>
+    </div>`
+  ).join('');
+  dropdown.style.display = 'block';
+}
+
+function seleccionarOperario(id, nombre) {
+  document.getElementById('operario_nombre').value = nombre;
+  document.getElementById('operario_id').value = id;
+  document.getElementById('operario-dropdown').style.display = 'none';
+  document.getElementById('tag_operario').style.display = 'inline-flex';
+  // La referencia del contador es POR OPERARIO: al cambiarlo hay que recalcularla.
+  actualizarLectura();
+}
+
+function cerrarDropdownOperario() {
+  setTimeout(() => {
+    document.getElementById('operario-dropdown').style.display = 'none';
+  }, 150);
+}
+
+
+// ——— Mostrar banner ———
+function mostrarBanner(msg, tipo) {
+  const b = document.getElementById('banner');
+  b.className = 'banner ' + tipo;
+  b.textContent = msg;
+  b.style.display = 'block';
+  if (tipo === 'ok') setTimeout(() => { b.style.display = 'none'; }, 4000);
+}
+
+// ——— Fecha/hora local en formato YYYY-MM-DD / HH:MM ———
+// Se usan para sellar el momento exacto de "Iniciar evento" y "Terminar evento".
+function _fechaActualStr(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+function _horaActualStr(d) {
+  const h = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  return `${h}:${mi}`;
+}
+
+// ——— Bloquear el CONTEXTO del turno mientras está abierto ———
+// OP, máquina y operario son fijos durante todo el turno (se llenan una sola vez,
+// antes de iniciar). Lo único que cambia por evento es el evento mismo y la
+// lectura del contador, que quedan editables. (El inspector ya no está aquí:
+// se identifica en el login y es el mismo durante todo el turno.)
+// Durante el turno la MÁQUINA queda fija (se escoge una sola vez al iniciar); el
+// resto del formulario (OP, razón, operario) sí se sigue editando. Por eso esto
+// ahora solo bloquea/desbloquea las pestañas de máquina.
+function bloquearContextoTurno(bloquear) {
+  document.querySelectorAll('.tab').forEach(t => {
+    t.style.pointerEvents = bloquear ? 'none' : '';
+    t.style.opacity = bloquear ? '0.5' : '';
+  });
+}
+
+// Bloquea (gris, intocable) o desbloquea TODO el formulario de abajo (OP, razón,
+// producción, sub eventos, operario, observaciones). Arranca bloqueado y solo se
+// abre al oprimir "Iniciar turno".
+function bloquearFormulario(bloquear) {
+  document.getElementById('form-gated').classList.toggle('locked', bloquear);
+}
+
+// ¿Hay una máquina elegida? (siempre viene una por defecto, pero por si acaso).
+function maquinaElegida() {
+  return !!(maquina && maquina.trim());
+}
+
+// ¿El formulario tiene todo lo necesario para arrancar el turno?
+// Se exige etapa elegida + evento + operario + OP. La OP solo se pide en etapa
+// productiva (ver opOk). El inspector viene del login. Observaciones es opcional.
+// La lectura del contador tampoco se pide aquí porque se digita al CERRAR cada
+// evento (no al abrirlo).
+function formCompleto() {
+  const hayEvento = !!(document.getElementById('cod_evento').value.trim() && evento_nombre);
+  const oper      = document.getElementById('operario_id').value.trim();
+  return !!(etapa && opOk() && hayEvento && oper);
+}
+
+// Enciende/apaga los botones según el estado. Se llama en cada cambio de campo
+// y también cada segundo desde el reloj.
+function actualizarBotones() {
+  const b1 = document.getElementById('btn-inicio-turno');
+  const b2 = document.getElementById('btn-fin-evento');
+  const b3 = document.getElementById('btn-cerrar-turno');
+  const b4 = document.getElementById('btn-cambiar-etapa');
+
+  if (!turnoActivo) {
+    // Sin turno: solo "Iniciar turno", y se habilita apenas hay una máquina
+    // elegida (el resto del formulario está bloqueado hasta oprimirlo).
+    b1.disabled = !maquinaElegida();
+    b2.disabled = true;
+  } else {
+    // Turno abierto: "Iniciar turno" ya no aplica (está oculto). "Fin evento"
+    // exige el formulario COMPLETO (OP válida según etapa, razón y operario) y
+    // que la lectura del contador sea válida (mayor a la anterior si se digita).
+    b1.disabled = true;
+    b2.disabled = !(formCompleto() && lecturaOk());
+  }
+  // "Cerrar turno" y "Cambiar etapa" no dependen del formulario.
+  b3.disabled = false;
+  b4.disabled = false;
+
+  // La tarjeta de sub eventos depende de lo mismo que "Fin evento" (formulario
+  // completo, con el turno ya iniciado), así que se sincroniza aquí.
+  actualizarCardMicroParo();
+}
+
+// ——— 1) INICIAR TURNO ———
+// Ahora es el "candado": solo exige que haya una máquina elegida. Al oprimirlo
+// arranca el turno (stampa la hora de inicio), DESBLOQUEA el formulario, deja la
+// máquina fija y muestra Fin evento / Cerrar turno / Cambiar etapa. El primer
+// registro se llena después y se guarda con "Fin evento".
+function iniciarTurno() {
+  if (turnoActivo) return;
+  if (!maquinaElegida()) {
+    mostrarBanner('⚠ Escoge la máquina antes de iniciar el turno', 'err');
+    return;
+  }
+  const now = new Date();
+  eventoInicio    = { fecha: _fechaActualStr(now), hora: _horaActualStr(now) };
+  turnoInicioHora = eventoInicio.hora;
+  turnoActivo     = true;
+
+  document.getElementById('turno-hora-inicio').textContent  = turnoInicioHora;
+  document.getElementById('evento-hora-inicio').textContent = eventoInicio.hora;
+  document.getElementById('turno-status').style.display = 'flex';
+
+  bloquearFormulario(false);      // desbloquea OP, razón, operario, etc.
+  bloquearContextoTurno(true);    // fija la máquina
+
+  // "Iniciar turno" se oculta; aparecen los tres de abajo.
+  document.getElementById('btn-inicio-turno').style.display = 'none';
+  document.getElementById('btn-fin-evento').style.display = '';
+  document.getElementById('btn-cerrar-turno').style.display = '';
+  document.getElementById('btn-cambiar-etapa').style.display = '';
+
+  cargarHistorial();
+  microParoNum = 0;
+  subEventosBuffer = [];
+  document.getElementById('microparo-num').textContent = '0';
+  actualizarBotones();            // ya sincroniza la tarjeta de sub eventos
+  mostrarBanner('✓ Turno iniciado ' + eventoInicio.hora + ' · llena el formulario y guarda con "Fin evento"', 'ok');
+}
+
+// Valida que el evento a cerrar esté completo antes de guardarlo: exige evento y
+// operario. Solo TIRAJE exige además una lectura del contador > 0; en GRADUACIÓN
+// la lectura es OPCIONAL (puede quedar en 0/vacía o llevar un número).
+function validarEventoParaCerrar() {
+  if (!(document.getElementById('cod_evento').value.trim() && evento_nombre)) {
+    mostrarBanner('⚠ Selecciona el evento antes de cerrarlo', 'err');
+    return false;
+  }
+  if (!document.getElementById('operario_id').value.trim()) {
+    mostrarBanner('⚠ Falta seleccionar el operario', 'err');
+    return false;
+  }
+  const lectura = parseInt(document.getElementById('val_cantidad').value) || 0;
+  // Solo TIRAJE obliga a ingresar la lectura, en cualquiera de las dos etapas.
+  // En los demás eventos el campo es opcional: se deja vacío cuando el contador
+  // no se movió.
+  if (exigeLectura() && lectura <= 0) {
+    mostrarBanner('⚠ Ingresa la lectura del contador para este evento', 'err');
+    return false;
+  }
+  // El contador es acumulativo: si el inspector digita un número, tiene que ser
+  // mayor que la última lectura de ESE operario en esta OP y máquina hoy —aunque
+  // sea por 1—. Si no tiene registros previos, no hay contra qué comparar.
+  const anterior = lecturaAnterior();
+  if (anterior > 0 && lectura > 0 && lectura <= anterior) {
+    mostrarBanner('⚠ La lectura debe ser mayor a ' + anterior.toLocaleString('es-CO') +
+                  '. Si el contador no se movió, deja el campo vacío.', 'err');
+    return false;
+  }
+  return true;
+}
+
+// ——— 2) FIN EVENTO ———
+// Cierra (guarda) el evento actual e inicia el siguiente en el MISMO instante,
+// para no perder minutos. Se puede repetir cuantas veces haga falta.
+function finEvento() {
+  if (!turnoActivo) return;
+  if (microParoActivo) { mostrarBanner('⚠ Termina el sub evento en curso antes de cerrar el evento', 'err'); return; }
+  if (!validarEventoParaCerrar()) return;
+  const now = new Date();
+  const fin = { fecha: _fechaActualStr(now), hora: _horaActualStr(now) };
+  guardarEvento(eventoInicio, fin, true);   // true = seguir el turno (arranca el siguiente evento)
+}
+
+// ——— 3) CERRAR TURNO ———
+// El botón solo ABRE la ventana de confirmación (Sí / No). El cierre real ocurre
+// en confirmarCerrarTurno(). Ya no depende de la hora.
+function cerrarTurno() {
+  if (!turnoActivo) {
+    mostrarBanner('⚠ No hay ningún turno abierto para cerrar', 'err');
+    return;
+  }
+  if (microParoActivo) { mostrarBanner('⚠ Termina el sub evento en curso antes de cerrar el turno', 'err'); return; }
+  document.getElementById('modal-cerrar').style.display = 'flex';
+}
+
+// Botón "No" del modal: solo cierra el mensaje y sigue en el mismo evento.
+function cancelarCerrarTurno() {
+  document.getElementById('modal-cerrar').style.display = 'none';
+}
+
+// Botón "Sí" del modal: cierra el turno de verdad. Si hay un evento abierto
+// seleccionado lo guarda y cierra; si no hay evento (porque se acaba de cerrar
+// uno con "Fin evento"), simplemente cierra el turno sin crear un registro vacío.
+function confirmarCerrarTurno() {
+  document.getElementById('modal-cerrar').style.display = 'none';
+  if (!turnoActivo) return;
+  const hayEvento = !!(document.getElementById('cod_evento').value.trim() && evento_nombre);
+  if (hayEvento) {
+    if (!validarEventoParaCerrar()) return;   // si el evento está incompleto, avisa y NO cierra
+    const now = new Date();
+    const fin = { fecha: _fechaActualStr(now), hora: _horaActualStr(now) };
+    guardarEvento(eventoInicio, fin, false);  // false = cerrar el turno
+  } else {
+    finalizarTurno();
+  }
+}
+
+// Cierra el turno, limpia el formulario y REGRESA A LA PANTALLA DE INGRESO
+// (cierra la sesión del inspector, para que el siguiente vuelva a loguearse).
+function finalizarTurno() {
+  turnoActivo  = false;
+  eventoInicio = null;
+  // Por si quedara algún micro paro colgado (no debería: se bloquea el cierre
+  // con uno en curso), se apaga su estado para no dejar el cronómetro corriendo.
+  microParoActivo = false;
+  subEventosBuffer = [];
+  microParoNum = 0;
+  resetMicroParoUI();
+  document.getElementById('turno-status').style.display = 'none';
+  document.getElementById('card_historial').style.display = 'none';
+  document.getElementById('card_microparo').style.display = 'none';
+  bloquearContextoTurno(false);
+  // Volver a dejar el formulario BLOQUEADO y los botones como al inicio, para que
+  // el siguiente turno vuelva a pasar por el candado ("Iniciar turno"). Sin esto,
+  // el segundo turno (sin recargar la página) arrancaría con el formulario abierto.
+  bloquearFormulario(true);
+  document.getElementById('btn-inicio-turno').style.display = '';
+  document.getElementById('btn-fin-evento').style.display = 'none';
+  document.getElementById('btn-cerrar-turno').style.display = 'none';
+  document.getElementById('btn-cambiar-etapa').style.display = 'none';
+  limpiarForm();
+  actualizarBotones();
+  mostrarBanner('✓ Turno cerrado. ¡Buen trabajo!', 'ok');
+
+  // Cerrar sesión del inspector y volver al login. La etapa también se borra:
+  // el siguiente turno vuelve a elegirla en la ventana emergente.
+  inspectorLogueado = '';
+  etapa = '';
+  // El turno terminó: se borra la foto para que el siguiente arranque limpio.
+  olvidarEstado();
+  aplicarEtapa();
+  document.getElementById('inspector-actual').textContent = '—';
+  document.getElementById('login-codigo').value = '';
+  document.getElementById('login-error').style.display = 'none';
+  document.getElementById('login-overlay').style.display = 'flex';
+  document.getElementById('login-codigo').focus();
+  window.scrollTo(0, 0);
+}
+
+// ——— Guardado real de un evento (POST /guardar) ———
+// continuar = true  → "Fin evento": tras guardar, arranca el siguiente evento
+//                     (inicio = fin del anterior) y limpia solo evento/lectura.
+// continuar = false → "Cerrar turno": tras guardar, finaliza el turno.
+// etapaTrasGuardar → si viene (desde "Cambiar etapa"), después de guardar y
+//                    arrancar el siguiente evento, cambia la etapa a este valor.
+function guardarEvento(inicio, fin, continuar, etapaTrasGuardar) {
+  // Separar máquina y planta del valor combinado (ej: "Pegadora 1 · P2")
+  const partes = maquina.split('·');
+  const maquinaNombre = partes[0].trim().toUpperCase();
+  const plantaCod = partes[1] ? partes[1].trim() : '';
+  const plantaNombre = plantaCod === 'P1' ? 'PLANTA 1' : plantaCod === 'P2' ? 'PLANTA 2' : plantaCod === 'P3' ? 'PLANTA 3' : plantaCod;
+
+  const data = {
+    maquina:          maquinaNombre,
+    planta:           plantaNombre,
+    etapa:            etapa,            // no se guarda en el Excel: el servidor la usa para validar
+    op:               document.getElementById('op').value.trim(),
+    cod_referencia:   document.getElementById('cod_referencia').value,
+    referencia:       document.getElementById('referencia').value,
+    cod_evento:       document.getElementById('cod_evento').value.trim(),
+    evento:           evento_nombre,
+    fecha_inicio:     inicio.fecha,
+    hora_inicio:      inicio.hora,
+    fecha_fin:        fin.fecha,
+    hora_fin:         fin.hora,
+    cantidad:         parseInt(document.getElementById('val_cantidad').value) || 0,
+    operario_id:      document.getElementById('operario_id').value,
+    operario_nombre:  document.getElementById('operario_nombre').value.trim(),
+    inspeccionó:      inspectorLogueado,   // viene del login (mismo durante todo el turno)
+    observaciones:    document.getElementById('observaciones').value.trim(),
+    parte:            parteSel,   // A / B / vacio (opcional)
+    // Sub eventos acumulados de este evento: el backend los guarda en Sheet2 con
+    // el ID FILA que le asigne al evento (el mismo ID replicado en cada uno).
+    sub_eventos:      subEventosBuffer
+  };
+
+  // La OP solo se exige en etapa productiva. En mantenimiento puede ir vacía,
+  // pero si el inspector escribió algo tiene que ser una OP real.
+  if (!opOk()) {
+    mostrarBanner(esMantenimiento() ? '⚠ Esa OP no existe. Corrígela o deja el campo vacío.'
+                                    : '⚠ La OP no es válida', 'err');
+    return;
+  }
+
+  // Deshabilita los botones y muestra el spinner del botón usado (evita doble envío).
+  const spinnerId = continuar ? 'spinner-fin' : 'spinner-cerrar';
+  document.getElementById('btn-fin-evento').disabled = true;
+  document.getElementById('btn-cerrar-turno').disabled = true;
+  document.getElementById('btn-cambiar-etapa').disabled = true;
+  document.getElementById(spinnerId).style.display = 'block';
+
+  fetch('/guardar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+  .then(r => r.json())
+  .then(res => {
+    document.getElementById(spinnerId).style.display = 'none';
+    if (res.error) {
+      mostrarBanner('⚠ ' + res.error, 'err');
+      actualizarBotones();
+      return;
+    }
+    const nSub = subEventosBuffer.length;
+    // El evento (y sus sub eventos) quedaron guardados: se vacía el buffer para
+    // que el siguiente evento empiece con su propia lista.
+    subEventosBuffer = [];
+    microParoNum = 0;
+    document.getElementById('microparo-num').textContent = '0';
+    mostrarBanner('✓ Evento guardado' + (nSub ? ' con ' + nSub + ' sub evento(s)' : '') +
+                  ' · ' + new Date().toLocaleTimeString('es-CO'), 'ok');
+    cargarHistorial();
+
+    if (continuar) {
+      // El siguiente evento arranca EXACTAMENTE cuando terminó el anterior:
+      // lo ÚNICO que se hereda del evento cerrado es la hora (fin -> inicio).
+      eventoInicio = { fecha: fin.fecha, hora: fin.hora };
+      document.getElementById('evento-hora-inicio').textContent = fin.hora;
+      // Antes solo se limpiaba evento/lectura/observaciones y se conservaban
+      // OP/operario/inspector bloqueados. Ahora se DESBLOQUEA y se LIMPIA todo el
+      // formulario, para obligar a diligenciar de nuevo TODOS los campos en cada
+      // evento (puede cambiar operario, OP, evento, máquina, etc.). La máquina
+      // conserva su valor como predeterminado, pero queda editable.
+      bloquearContextoTurno(false);
+      limpiarForm();
+      cargarHistorial();       // oculta el historial de la OP anterior (op quedó vacía)
+      actualizarBotones();
+
+      if (etapaTrasGuardar) {
+        etapa = etapaTrasGuardar;
+        aplicarEtapa();        // vuelve a llamar cargarHistorial() y actualiza la barra
+        mostrarBanner('✓ Evento cerrado · etapa cambiada a ' +
+                      (etapa === 'mantenimiento' ? 'Mantenimiento' : 'Productiva'), 'ok');
+      }
+    } else {
+      finalizarTurno();
+    }
+  })
+  .catch(() => {
+    document.getElementById(spinnerId).style.display = 'none';
+    mostrarBanner('Error de conexión. Revisa la red.', 'err');
+    actualizarBotones();
+  });
+}
+
+// ——— Limpiar formulario ———
+function limpiarForm() {
+  document.getElementById('op').value = '';
+  document.getElementById('cod_referencia').value = '';
+  document.getElementById('referencia').value = '';
+  document.getElementById('tag_ref').style.display = 'none';
+  document.getElementById('cod_evento').value = '';
+  document.getElementById('evento_nombre').value = '';
+  document.getElementById('tag_evento').style.display = 'none';
+  document.getElementById('operario_nombre').value = '';
+  document.getElementById('operario_id').value = '';
+  document.getElementById('tag_operario').style.display = 'none';
+  document.getElementById('observaciones').value = '';
+  document.getElementById('val_cantidad').value = '';
+  evento_nombre = '';
+  actualizarLectura();   // borra la pista de la lectura anterior
+  opValida = false;
+  document.getElementById('op-status').style.display = 'none';
+  document.getElementById('op').classList.remove('op-valid','op-invalid');
+  // La parte (A/B) es por evento: se limpia al pasar al siguiente.
+  parteSel = '';
+  document.getElementById('btn-parte-a').classList.remove('active');
+  document.getElementById('btn-parte-b').classList.remove('active');
+  // Cada evento nuevo arranca su propio conteo de micro paros, y al quedar el
+  // evento vacío la tarjeta se oculta (solo reaparece al elegir TIRAJE de nuevo).
+  microParoNum = 0;
+  document.getElementById('microparo-num').textContent = '0';
+  actualizarCardMicroParo();
+  window.scrollTo(0, 0);
+}
+</script>
+
+<script>
+// ——— Historial de la OP (hoy · misma máquina) — módulo independiente ———
+function _maquinaNombreActual() {
+  const partes = maquina.split('·');
+  return partes[0].trim().toUpperCase();
+}
+
+function cargarHistorial() {
+  const op = document.getElementById('op').value.trim();
+  const card = document.getElementById('card_historial');
+  // opOk() ya sabe qué exige cada etapa: en productiva hace falta una OP válida;
+  // en mantenimiento la OP puede ir vacía y entonces el historial trae los
+  // registros SIN OP de esta máquina hoy (los tirajes de prueba, por ejemplo),
+  // que son justo la referencia del contador para ese caso.
+  if (!etapa || !opOk() || (op && !opValida)) {
+    card.style.display = 'none';
+    histRegistros = [];      // sin referencia de contador
+    actualizarLectura();
+    return;
+  }
+  const maq = _maquinaNombreActual();
+  fetch('/historial_op?op=' + encodeURIComponent(op) + '&maquina=' + encodeURIComponent(maq))
+    .then(r => r.json())
+    .then(d => {
+      const lista = document.getElementById('historial-lista');
+      const total = document.getElementById('historial-total');
+      const regs = d.registros || [];
+      // Estos mismos registros son la fuente de la "última lectura" por operario
+      // que valida el campo del contador (no hace falta otra consulta al Excel).
+      histRegistros = regs;
+      actualizarLectura();
+      if (regs.length === 0) {
+        lista.innerHTML = '<div style="font-size:13px; color:var(--texto-sub); padding:4px 0;">' +
+                          (op ? 'Sin registros para esta OP hoy en esta máquina.'
+                              : 'Sin registros sin OP hoy en esta máquina.') + '</div>';
+        total.textContent = '';
+        card.style.display = 'block';
+        return;
+      }
+
+      // Agrupar registros consecutivos por operario.
+      // El contador (la resta hora a hora) se REINICIA cuando cambia el operario,
+      // aunque sea la misma OP, para medir la productividad de cada uno por separado.
+      const grupos = [];
+      let actual = null;
+      regs.forEach(function(r) {
+        const id = r.operario_id || '';
+        const nom = r.operario_nombre || '(sin operario)';
+        if (!actual || actual.id !== id) {
+          actual = { id: id, nombre: nom, filas: [] };
+          grupos.push(actual);
+        }
+        actual.filas.push(r);
+      });
+
+      let html = '';
+      let totalDia = 0;
+
+      grupos.forEach(function(g) {
+        // Encabezado del operario
+        html += '<div style="display:flex; align-items:center; gap:6px; margin:12px 0 4px; font-size:12px; font-weight:600; color:var(--verde);">' +
+                  '<span>👤 ' + g.nombre + '</span>' +
+                  (g.id ? '<span style="color:var(--texto-sub); font-weight:400;">· ID ' + g.id + '</span>' : '') +
+                '</div>';
+        // Encabezado de columnas
+        html += '<div style="display:flex; gap:8px; font-size:10px; text-transform:uppercase; letter-spacing:.4px; color:var(--texto-sub); padding:2px 0; border-bottom:1px solid var(--gris-borde);">' +
+                  '<span style="min-width:80px;">Inicio–Fin</span>' +
+                  '<span style="flex:1;">Razón</span>' +
+                  '<span style="min-width:58px; text-align:right;">Lectura</span>' +
+                  '<span style="min-width:58px; text-align:right;">Producción</span>' +
+                '</div>';
+
+        // El Excel guarda: la base = lectura del contador, y los demás = producción ya calculada.
+        // Reconstruimos la lectura del contador y la operación a partir de lo guardado.
+        // Se lleva un acumulado POR PARTE (A / B / sin parte): el contador de la
+        // máquina se reinicia al cambiar de parte, así que cada una tiene su base.
+        const accPorParte   = {};   // parte -> acumulado
+        const compsPorParte = {};   // parte -> componentes, para escribir la operación
+        let html_filas = '';
+
+        g.filas.forEach(function(r) {
+          const guardado = r.cantidad || 0;
+          const parte = (r.parte || '').toUpperCase();
+          if (accPorParte[parte] === undefined) { accPorParte[parte] = 0; compsPorParte[parte] = []; }
+          let acc = accPorParte[parte];
+          const comps = compsPorParte[parte];
+          // En esta app el contador se puede digitar en CUALQUIER razón de paro
+          // (no existen TIRAJE/GRADUACIÓN como en Impresora). La fila muestra lectura
+          // y producción cuando realmente se guardó un valor; si el inspector dejó
+          // el campo vacío (se guardó 0) va el guion y no entra al acumulado.
+          const usaContador = guardado !== 0;
+          let celdaLectura, celdaProd, lineaOper = '';
+
+          if (!usaContador) {
+            // Eventos sin producción (paros, mantenimiento, etc.): no afectan el acumulado
+            celdaLectura = '<span style="color:var(--texto-sub);">—</span>';
+            celdaProd    = '<span style="color:var(--texto-sub);">—</span>';
+          } else if (acc === 0) {
+            // Primer registro de ESTA PARTE = BASE (se guardó la lectura tal cual)
+            celdaLectura = guardado.toLocaleString('es-CO');
+            celdaProd    = '<span style="color:var(--texto-sub);">base</span>';
+            comps.push(guardado);
+            acc += guardado;
+          } else {
+            // Registro siguiente de la misma parte: lectura = acumulado previo + lo guardado
+            const lectura = acc + guardado;
+            const terminos = comps.map(function(x){ return x.toLocaleString('es-CO'); }).join(' + ');
+            const accStr = comps.length > 1 ? '(' + terminos + ')' : terminos;
+            const color = guardado < 0 ? 'var(--rojo)' : 'var(--verde-oscuro)';
+            celdaLectura = lectura.toLocaleString('es-CO');
+            celdaProd    = '<span style="font-weight:600; color:' + color + ';">' + guardado.toLocaleString('es-CO') + '</span>';
+            lineaOper = '<div style="font-size:11px; color:var(--verde-oscuro); background:var(--verde-claro); border-radius:6px; padding:3px 8px; margin:0 0 6px 50px; display:inline-block; font-family:\'Courier New\',monospace;">' +
+                          lectura.toLocaleString('es-CO') + ' − ' + accStr + ' = ' + guardado.toLocaleString('es-CO') +
+                        '</div>';
+            comps.push(guardado);
+            acc += guardado;
+          }
+          accPorParte[parte] = acc;
+
+          // Antes se mostraba una sola hora (r.hora); ahora se arma el rango
+          // "HH:MM–HH:MM" a partir de las horas de inicio y fin del evento.
+          const rangoHoras = (r.hora_inicio || '—') + (r.hora_fin ? '–' + r.hora_fin : '');
+          // Etiqueta de la parte (A / B) para distinguir los dos trabajos de una
+          // misma OP. Si el registro no tiene parte marcada, no se muestra nada.
+          const tagParte = parte
+            ? '<span style="font-size:10px; font-weight:700; color:white; background:var(--verde);' +
+              ' border-radius:4px; padding:1px 5px; margin-right:4px;">' + parte + '</span>'
+            : '';
+          html_filas += '<div style="display:flex; gap:8px; align-items:center; padding:6px 0 2px; font-size:13px;">' +
+                          '<span style="font-family:\'Courier New\',monospace; color:var(--verde-oscuro); min-width:80px;">' + rangoHoras + '</span>' +
+                          '<span style="flex:1; color:var(--texto-sub); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + tagParte + (r.evento || '—') + '</span>' +
+                          '<span style="min-width:58px; text-align:right;">' + celdaLectura + '</span>' +
+                          '<span style="min-width:58px; text-align:right;">' + celdaProd + '</span>' +
+                        '</div>' + lineaOper;
+        });
+
+        html += html_filas;
+        // Producción del operario = suma de TODAS sus partes (A + B + sin parte).
+        const totalOperario = Object.keys(accPorParte).reduce(function(s, k) {
+          return s + accPorParte[k];
+        }, 0);
+        totalDia += totalOperario;
+        // Si hubo más de una parte, se detalla cuánto se hizo en cada una.
+        const partesConDatos = Object.keys(accPorParte).filter(function(k) { return accPorParte[k] !== 0; });
+        let detallePartes = '';
+        if (partesConDatos.length > 1) {
+          detallePartes = '<div style="text-align:right; font-size:11px; color:var(--texto-sub); padding:2px 0;">' +
+            partesConDatos.map(function(k) {
+              return (k ? 'Parte ' + k : 'Sin parte') + ': ' + accPorParte[k].toLocaleString('es-CO');
+            }).join(' · ') + '</div>';
+        }
+        html += detallePartes;
+        html += '<div style="text-align:right; font-size:12px; color:var(--verde-oscuro); padding:6px 0 2px; border-top:1px dashed var(--gris-borde); margin-top:4px;">' +
+                  'Producción de ' + g.nombre + ': <strong>' + totalOperario.toLocaleString('es-CO') + '</strong>' +
+                '</div>';
+      });
+
+      lista.innerHTML = html;
+      total.innerHTML = 'Producción total del día: <strong>' + totalDia.toLocaleString('es-CO') + '</strong>';
+      card.style.display = 'block';
+    })
+    .catch(function() {});
+}
+
+// Colapsar / expandir el desplegable
+document.getElementById('historial-toggle').addEventListener('click', function() {
+  const body = document.getElementById('historial-body');
+  const arrow = document.getElementById('historial-arrow');
+  if (body.style.display === 'none') { body.style.display = 'block'; arrow.textContent = '▾'; }
+  else { body.style.display = 'none'; arrow.textContent = '▸'; }
+});
+
+// Disparador: al confirmar/salir del campo OP (espera la validación de opValida)
+document.getElementById('op').addEventListener('blur', function() {
+  setTimeout(cargarHistorial, 300);
+});
+
+// Disparador: al cambiar de máquina (recarga el historial de esa máquina)
+document.querySelectorAll('.tab').forEach(function(t) {
+  t.addEventListener('click', function() { setTimeout(cargarHistorial, 50); });
+});
+
+// Estado inicial de los botones al cargar la página.
+actualizarBotones();
+</script>
+
+<script>
+// ——— LOGIN DEL INSPECTOR ————————————————————————————————————————————————————
+// Valida la CÉDULA (contraseña) contra el servidor (/login). El servidor busca
+// la codigo en la MAESTRA OPERARIOS (filtrando por área autorizada) y devuelve
+// el nombre. Ese nombre se guarda en inspectorLogueado y es el que se registra
+// en la columna INSPECCIONÓ.
+function hacerLogin() {
+  const cedula = document.getElementById('login-codigo').value.trim();
+  const errBox = document.getElementById('login-error');
+
+  if (!cedula) {
+    errBox.textContent = 'Escribe tu codigo.';
+    errBox.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('btn-login');
+  btn.disabled = true;
+  document.getElementById('spinner-login').style.display = 'block';
+
+  fetch('/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ codigo: cedula })
+  })
+  .then(function(r) { return r.json().then(function(res) { return { status: r.status, res: res }; }); })
+  .then(function(out) {
+    document.getElementById('spinner-login').style.display = 'none';
+    btn.disabled = false;
+    if (out.res && out.res.ok) {
+      inspectorLogueado = out.res.nombre;
+      document.getElementById('inspector-actual').textContent = out.res.nombre;
+      errBox.style.display = 'none';
+      document.getElementById('login-codigo').value = '';   // no dejar la codigo escrita
+      document.getElementById('login-overlay').style.display = 'none';
+      // Ya identificado, lo siguiente es la etapa: hasta que no elija una, el
+      // formulario queda tapado por esta ventana.
+      pedirEtapa();
+      window.scrollTo(0, 0);
+    } else {
+      errBox.textContent = (out.res && out.res.error) ? out.res.error : 'Codigo no válida.';
+      errBox.style.display = 'block';
+    }
+  })
+  .catch(function() {
+    document.getElementById('spinner-login').style.display = 'none';
+    btn.disabled = false;
+    errBox.textContent = 'Error de conexión. Revisa la red.';
+    errBox.style.display = 'block';
+  });
+}
+
+// Permitir ingresar con la tecla Enter desde el campo de codigo.
+document.getElementById('login-codigo').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.preventDefault(); hacerLogin(); }
+});
+</script>
+<!-- Marca de versión: sirve para saber de un vistazo si el celular está viendo
+     la versión nueva del formulario o una guardada en caché. Al actualizar la
+     app, cambiar esta fecha. -->
+<div style="text-align:center; font-size:10px; color:#999; padding:10px 0 18px;">
+  Registro de Paros · v2026-09-02b
+</div>
+
+</body>
+</html>
