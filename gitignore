@@ -1,0 +1,36 @@
+# Credenciales y configuración local — NUNCA subir
+.env
+secretos.py
+config_local.py
+
+# Datos reales (Excel de producción, maestras, consolidados)
+datos/
+*.xlsx
+*.xls
+*.csv
+!datos/ejemplo/*.xlsx
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv/
+
+# Logs
+*.log
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores
+.vscode/
+.idea/
+*.swp
+*.swo
